@@ -101,7 +101,7 @@ class UpdateLicensesCommand extends Command
         $finder
             ->files()
             ->name('*.' . $ext)
-            ->in(_PS_ROOT_DIR_)
+            ->in(getcwd())
             ->exclude(array(
                 '.git',
                 '.github',
