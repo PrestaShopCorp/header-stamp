@@ -1,0 +1,28 @@
+{
+    "name": "prestashop/pimp-my-header",
+    "description": "PrestaShop module autoupgrade",
+    "homepage": "https://github.com/PrestaShop/pimp_my_header",
+    "license": "AFL-3.0",
+    "authors": [
+      {
+        "name": "PrestaShop SA",
+        "email": "contact@prestashop.com"
+      }
+    ],
+    "require": {
+        "symfony/console": "^4.3",
+        "symfony/finder": "^4.3",
+        "nikic/php-parser": "^4.2"
+    },
+    "config": {
+      "preferred-install": "dist",
+      "prepend-autoloader": false,
+      "optimize-autoloader": true
+    },
+    "type": "prestashop-module",
+    "autoload": {
+      "psr-4": {
+        "PrestaShop\\PimpMyHeader\\": "src/"
+      }
+    }
+}
