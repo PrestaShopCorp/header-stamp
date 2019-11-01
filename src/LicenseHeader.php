@@ -36,9 +36,16 @@ class LicenseHeader
     private function loadFile()
     {
         if (!\file_exists($this->filePath)) {
-            throw new \Exception(
-                'File '. $this->filePath .' does not exist.'
-            );
+            // If the file is not found, we might have a relative path
+            // We check this before throwing any exception
+            $fromRelativeFilePath = getcwd() . '/' . $this->filePath;
+
+            if (!\file_exists($fromRelativeFilePath)) {
+                throw new \Exception(
+                    'File '. $this->filePath .' does not exist.'
+                );
+            }
+            $this->filePath = $fromRelativeFilePath . $this->filePath;
         }
 
         if (!\is_readable($this->filePath)) {
