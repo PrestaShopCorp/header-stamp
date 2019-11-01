@@ -50,8 +50,14 @@ class UpdateLicensesCommand extends Command
     ];
     const DEFAULT_FILTERS = [];
 
+    /**
+     * @param string License content
+     */
     private $text;
 
+    /**
+     * @param string License file path (not content)
+     */
     private $license;
 
     /**
@@ -74,7 +80,7 @@ class UpdateLicensesCommand extends Command
             ->setName('prestashop:licenses:update')
             ->setDescription('Rewrite your file headers to add the license or to make them up-to-date')
             ->addOption(
-                'licenceFile',
+                'license',
                 null,
                 InputOption::VALUE_REQUIRED,
                 'License file to apply',
@@ -100,6 +106,7 @@ class UpdateLicensesCommand extends Command
     {
         $this->extensions = explode(',', $input->getOption('extensions'));
         $this->filters = explode(',', $input->getOption('exclude'));
+        $this->license = $input->getOption('license');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -107,7 +114,7 @@ class UpdateLicensesCommand extends Command
         $this->text = str_replace(
             '{currentYear}',
             date('Y'),
-            (new LicenseHeader($input->getOption('licenceFile')))->getContent()
+            (new LicenseHeader($this->license))->getContent()
         );
 
         foreach ($this->extensions as $extension) {
@@ -131,8 +138,6 @@ class UpdateLicensesCommand extends Command
         $progress->setRedrawFrequency(20);
 
         foreach ($finder as $file) {
-            $this->license = $this->text;
-
             switch ($file->getExtension()) {
                 case 'php':
                     try {
@@ -180,7 +185,7 @@ class UpdateLicensesCommand extends Command
         // Regular expression found thanks to Stephen Ostermiller's Blog. http://blog.ostermiller.org/find-comment
         $regex = '%' . $startDelimiter . '\*([^*]|[\r\n]|(\*+([^*' . $endDelimiter . ']|[\r\n])))*\*+' . $endDelimiter . '%';
         $matches = array();
-        $text = $this->license;
+        $text = $this->text;
         if ($startDelimiter != '\/') {
             $text = $startDelimiter . ltrim($text, '/');
         }
@@ -214,7 +219,7 @@ class UpdateLicensesCommand extends Command
     {
         if (!$node->hasAttribute('comments')) {
             $needle = '<?php';
-            $replace = "<?php\n" . $this->license . "\n";
+            $replace = "<?php\n" . $this->text . "\n";
             $haystack = $file->getContents();
 
             $pos = strpos($haystack, $needle);
@@ -231,7 +236,7 @@ class UpdateLicensesCommand extends Command
         foreach ($comments as $comment) {
             if ($comment instanceof \PhpParser\Comment
                 && strpos($comment->getText(), 'prestashop') !== false) {
-                file_put_contents($file->getRelativePathname(), str_replace($comment->getText(), $this->license, $file->getContents()));
+                file_put_contents($file->getRelativePathname(), str_replace($comment->getText(), $this->text, $file->getContents()));
             }
         }
     }
@@ -275,7 +280,7 @@ class UpdateLicensesCommand extends Command
 
         $content = (array) json_decode($file->getContents());
         $content['author'] = 'PrestaShop';
-        $content['license'] = strpos($this->license, 'afl') ? 'AFL-3.0' : 'OSL-3.0';
+        $content['license'] = (false !== strpos($this->license, 'afl')) ? 'AFL-3.0' : 'OSL-3.0';
 
         return file_put_contents($file->getRelativePathname(), json_encode($content, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
     }
