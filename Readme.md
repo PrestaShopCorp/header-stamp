@@ -1,10 +1,10 @@
 # Pimp My Header
 
-Update the headers of a given folder. This tools extracts the command originally available in the PrestaShop Core.
+Update the headers of the current folder. This tools extracts the command originally available in the PrestaShop Core.
 
 ## Installation
 
-This projet is downloadable via Composer, the PHP Package Manager.
+This projet is downloadable via Composer, the PHP Package Manager. We recommend having it in the `require-dev` section of your dependancies as it is not needed on production environments.
 
 ```
 composer require --dev prestashop/pimp-my-header
