@@ -17,8 +17,6 @@ script:
   - find . -type f -name '*.php' ! -path "./vendor/*" ! -path "./tests/*" -exec php -l -n {} \; | (! grep -v "No syntax errors detected")
   # PHP cs fixer
   - vendor/bin/php-cs-fixer fix --no-interaction --dry-run --diff
-  # PHP Unit
-  - vendor/bin/phpunit tests
   # PHP Stan
   - if [ ${TRAVIS_PHP_VERSION:0:2} == "7." ]; then
       composer global phpstan/phpstan-shim
