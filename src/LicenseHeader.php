@@ -24,7 +24,6 @@
  * International Registered Trademark & Property of PrestaShop SA
  */
 
-
 namespace PrestaShop\PimpMyHeader;
 
 /**
@@ -34,14 +33,14 @@ class LicenseHeader
 {
     /**
      * Header content
-     * 
+     *
      * @param string $content
      */
     private $content;
 
     /**
      * Path to the file
-     * 
+     *
      * @param string $filePath
      */
     private $filePath;
@@ -62,6 +61,7 @@ class LicenseHeader
         if (null === $this->content) {
             $this->loadFile();
         }
+
         return $this->content;
     }
 
@@ -77,7 +77,7 @@ class LicenseHeader
 
             if (!\file_exists($fromRelativeFilePath)) {
                 throw new \Exception(
-                    'File '. $this->filePath .' does not exist.'
+                    'File ' . $this->filePath . ' does not exist.'
                 );
             }
             $this->filePath = $fromRelativeFilePath . $this->filePath;
@@ -85,7 +85,7 @@ class LicenseHeader
 
         if (!\is_readable($this->filePath)) {
             throw new \Exception(
-                'File '. $this->filePath .' cannot be read.'
+                'File ' . $this->filePath . ' cannot be read.'
             );
         }
 

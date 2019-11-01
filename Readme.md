@@ -4,7 +4,7 @@ Update the headers of a given folder. This tools extracts the command originally
 
 ## Installation
 
-Coming soon: This projet should be available on Packagist and being downloadable via Composer, the PHP Package Manager.
+This projet is downloadable via Composer, the PHP Package Manager.
 
 ```
 composer require --dev prestashop/pimp-my-header
@@ -20,11 +20,10 @@ php vendor/bin/pimp-my-header
 
 The default behavior is to apply the OSL license in every compatible file found in the current folder.
 
-Parameters:
+Available options:
 
 ```
-- Filter folders
-- List of file extensions to update
-- License block to use
-- Configuration file to use
+--license=LICENSE        License file to apply [default: "/home/thomas/Documents/github/PimpMyHeader/assets/osl3.txt"]
+--exclude=EXCLUDE        Comma-separated list of folders and files to exclude from the update [default: ""]
+--extensions=EXTENSIONS  Comma-separated list of file extensions to update [default: "php,js,css,tpl,html.twig,json,vue"]
 ```

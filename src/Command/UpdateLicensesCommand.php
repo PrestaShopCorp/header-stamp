@@ -52,28 +52,28 @@ class UpdateLicensesCommand extends Command
 
     /**
      * License content
-     * 
+     *
      * @param string $text
      */
     private $text;
 
     /**
      * License file path (not content)
-     * 
+     *
      * @param string $license
      */
     private $license;
 
     /**
      * List of extensions to update
-     * 
+     *
      * @param array $extensions
      */
     private $extensions;
 
     /**
      * List of folders and files to exclude from the search
-     * 
+     *
      * @param array $filters
      */
     private $filters;
