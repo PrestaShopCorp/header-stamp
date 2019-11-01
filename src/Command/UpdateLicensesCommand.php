@@ -31,6 +31,7 @@ use PrestaShop\PimpMyHeader\LicenseHeader;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
@@ -38,14 +39,7 @@ use Symfony\Component\Finder\SplFileInfo;
 class UpdateLicensesCommand extends Command
 {
     const DEFAULT_LICENSE_FILE = __DIR__ . '/../../assets/osl3.txt';
-
-    private $text;
-
-    private $license;
-
-    private $filters = [];
-
-    private $extensions = [
+    const DEFAULT_EXTENSIONS = [
         'php',
         'js',
         'css',
@@ -54,23 +48,58 @@ class UpdateLicensesCommand extends Command
         'json',
         'vue',
     ];
+    const DEFAULT_FILTERS = [];
+
+    private $text;
+
+    private $license;
+
+    /**
+     * List of extensions to update
+     * 
+     * @param array
+     */
+    private $extensions;
+
+    /**
+     * List of folders and files to exclude from the search
+     * 
+     * @param array
+     */
+    private $filters;
 
     protected function configure()
     {
         $this
             ->setName('prestashop:licenses:update')
-            ->setDescription('Rewrite your licenses to be up-to-date');
+            ->setDescription('Rewrite your file headers to add the license or to make them up-to-date')
+            ->addOption(
+                'licenceFile',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'License file to apply',
+                realpath(self::DEFAULT_LICENSE_FILE)
+            )
+            ->addOption(
+                'exclude',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Comma-separated list of folders and files to exclude from the update',
+                implode(',', self::DEFAULT_FILTERS)
+            )
+            ->addOption(
+                'extensions',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Comma-separated list of file extensions to update',
+                implode(',', self::DEFAULT_EXTENSIONS)
+            );
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
-        /*
-            - Filter folders
-            - List of file extensions to update
-            - License block to use
-            - Configuration file to use
-         */
-        $this->license = self::DEFAULT_LICENSE_FILE;
+        $this->extensions = explode(',', $input->getOption('extensions'));
+        $this->filters = explode(',', $input->getOption('exclude'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -78,7 +107,7 @@ class UpdateLicensesCommand extends Command
         $this->text = str_replace(
             '{currentYear}',
             date('Y'),
-            (new LicenseHeader($this->license))->getContent()
+            (new LicenseHeader($input->getOption('licenceFile')))->getContent()
         );
 
         foreach ($this->extensions as $extension) {
