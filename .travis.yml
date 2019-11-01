@@ -1,0 +1,23 @@
+language: php
+
+php:
+  - 7.0
+  - 7.2
+
+cache:
+  directories:
+    - $HOME/.composer/cache
+
+install:
+  - composer install
+
+script:
+  # PHP syntax check
+  - find . -type f -name '*.php' ! -path "./vendor/*" ! -path "./tests/*" -exec php -l -n {} \; | (! grep -v "No syntax errors detected")
+  # PHP cs fixer
+  - vendor/bin/php-cs-fixer fix --no-interaction --dry-run --diff
+  # PHP Stan
+  - if [ ${TRAVIS_PHP_VERSION:0:3} == "7.2" ]; then
+      composer global require phpstan/phpstan-shim;
+      ~/.composer/vendor/bin/phpstan analyse --configuration=$PWD/tests/phpstan/phpstan.neon;
+    fi
