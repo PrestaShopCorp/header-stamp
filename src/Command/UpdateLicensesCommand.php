@@ -27,6 +27,7 @@
 namespace PrestaShop\PimpMyHeader\Command;
 
 use PhpParser\ParserFactory;
+use PrestaShop\PimpMyHeader\LicenseHeader;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
@@ -36,38 +37,23 @@ use Symfony\Component\Finder\SplFileInfo;
 
 class UpdateLicensesCommand extends Command
 {
-    private $text = '/**
- * 2007-{currentYear} PrestaShop and Contributors
- *
- * NOTICE OF LICENSE
- *
- * This source file is subject to the {licenseName}
- * that is bundled with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * {licenseLink}
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@prestashop.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade PrestaShop to newer
- * versions in the future. If you wish to customize PrestaShop for your
- * needs please refer to https://www.prestashop.com for more information.
- *
- * @author    PrestaShop SA <contact@prestashop.com>
- * @copyright 2007-{currentYear} PrestaShop SA and Contributors
- * @license   {licenseLink} {licenseName}
- * International Registered Trademark & Property of PrestaShop SA
- */';
+    const DEFAULT_LICENSE_FILE = __DIR__ . '/../../assets/osl3.txt';
+
+    private $text;
 
     private $license;
 
-    private $aflLicense = array(
-        'themes/classic/',
-        'themes/StarterTheme/',
-        'modules/',
-    );
+    private $filters = [];
+
+    private $extensions = [
+        'php',
+        'js',
+        'css',
+        'tpl',
+        'html.twig',
+        'json',
+        'vue',
+    ];
 
     protected function configure()
     {
@@ -76,21 +62,26 @@ class UpdateLicensesCommand extends Command
             ->setDescription('Rewrite your licenses to be up-to-date');
     }
 
+    protected function initialize(InputInterface $input, OutputInterface $output)
+    {
+        /*
+            - Filter folders
+            - List of file extensions to update
+            - License block to use
+            - Configuration file to use
+         */
+        $this->license = self::DEFAULT_LICENSE_FILE;
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->text = str_replace('{currentYear}', date('Y'), $this->text);
-
-        $extensions = array(
-            'php',
-            'js',
-            'css',
-            'tpl',
-            'html.twig',
-            'json',
-            'vue',
+        $this->text = str_replace(
+            '{currentYear}',
+            date('Y'),
+            (new LicenseHeader($this->license))->getContent()
         );
 
-        foreach ($extensions as $extension) {
+        foreach ($this->extensions as $extension) {
             $this->findAndCheckExtension($output, $extension);
         }
     }
@@ -102,24 +93,7 @@ class UpdateLicensesCommand extends Command
             ->files()
             ->name('*.' . $ext)
             ->in(getcwd())
-            ->exclude(array(
-                '.git',
-                '.github',
-                '.composer',
-                'admin-dev/filemanager',
-                'js/tiny_mce',
-                'js/jquery',
-                'js/cropper',
-                'tests/resources/ModulesOverrideInstallUninstallTest',
-                'tools/htmlpurifier',
-                'vendor',
-                'node_modules',
-                'themes/classic/assets/',
-                'themes/starterTheme/assets/',
-                'admin-dev/themes/default/public/',
-                'admin-dev/themes/new-theme/public/',
-            ))
-            ->ignoreDotFiles(false);
+            ->exclude($this->filters);
         $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
 
         $output->writeln('Updating license in ' . strtoupper($ext) . ' files ...');
@@ -129,7 +103,6 @@ class UpdateLicensesCommand extends Command
 
         foreach ($finder as $file) {
             $this->license = $this->text;
-            $this->makeGoodLicense($file);
 
             switch ($file->getExtension()) {
                 case 'php':
@@ -170,52 +143,6 @@ class UpdateLicensesCommand extends Command
 
         $progress->finish();
         $output->writeln('');
-    }
-
-    /**
-     * @param SplFileInfo $file
-     */
-    private function makeGoodLicense(SplFileInfo $file)
-    {
-        if ($this->isAFLLicense($file->getRelativePathname())) {
-            $this->makeAFLLicense();
-        } else {
-            $this->makeOSLLicense();
-        }
-    }
-
-    /**
-     * @param $fileName
-     *
-     * @return bool
-     */
-    private function isAFLLicense($fileName)
-    {
-        foreach ($this->aflLicense as $afl) {
-            if (0 === strpos($fileName, $afl)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Replace for OSL licenses.
-     */
-    private function makeOSLLicense()
-    {
-        $this->license = str_replace('{licenseName}', 'Open Software License (OSL 3.0)', $this->license);
-        $this->license = str_replace('{licenseLink}', 'https://opensource.org/licenses/OSL-3.0', $this->license);
-    }
-
-    /**
-     * Replace for AFL licenses.
-     */
-    private function makeAFLLicense()
-    {
-        $this->license = str_replace('{licenseName}', 'Academic Free License 3.0 (AFL-3.0)', $this->license);
-        $this->license = str_replace('{licenseLink}', 'https://opensource.org/licenses/AFL-3.0', $this->license);
     }
 
     private function addLicenseToFile($file, $startDelimiter = '\/', $endDelimiter = '\/')
@@ -319,7 +246,7 @@ class UpdateLicensesCommand extends Command
 
         $content = (array) json_decode($file->getContents());
         $content['author'] = 'PrestaShop';
-        $content['license'] = $this->isAFLLicense($file->getRelativePathname()) ? 'AFL-3.0' : 'OSL-3.0';
+        $content['license'] = strpos($this->license, 'afl') ? 'AFL-3.0' : 'OSL-3.0';
 
         return file_put_contents($file->getRelativePathname(), json_encode($content, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
     }
