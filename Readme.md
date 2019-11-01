@@ -23,7 +23,7 @@ The default behavior is to apply the OSL license in every compatible file found 
 Available options:
 
 ```
---license=LICENSE        License file to apply [default: "/home/thomas/Documents/github/PimpMyHeader/assets/osl3.txt"]
+--license=LICENSE        License file to apply [default: "assets/osl3.txt"]
 --exclude=EXCLUDE        Comma-separated list of folders and files to exclude from the update [default: ""]
 --extensions=EXTENSIONS  Comma-separated list of file extensions to update [default: "php,js,css,tpl,html.twig,json,vue"]
 ```

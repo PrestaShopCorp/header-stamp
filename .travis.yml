@@ -17,5 +17,7 @@ script:
   # PHP cs fixer
   - vendor/bin/php-cs-fixer fix --no-interaction --dry-run --diff
   # PHP Stan
-  - composer global require phpstan/phpstan-shim
-  - ~/.composer/vendor/bin/phpstan analyse --configuration=$PWD/tests/phpstan/phpstan.neon
+  - if [ ${TRAVIS_PHP_VERSION:0:3} == "7.2" ]; then
+      composer global require phpstan/phpstan-shim;
+      ~/.composer/vendor/bin/phpstan analyse --configuration=$PWD/tests/phpstan/phpstan.neon;
+    fi
