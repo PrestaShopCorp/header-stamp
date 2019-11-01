@@ -1,0 +1,6 @@
+parameters:
+  paths:
+    - src/
+    - pimp-my-header.php
+  level: 7
+  inferPrivatePropertyTypeFromConstructor: true

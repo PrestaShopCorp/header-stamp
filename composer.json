@@ -25,5 +25,8 @@
             "PrestaShop\\PimpMyHeader\\": "src/"
         }
     },
-    "author": "PrestaShop"
+    "author": "PrestaShop",
+    "require-dev": {
+        "prestashop/php-coding-standards": "dev-master"
+    }
 }

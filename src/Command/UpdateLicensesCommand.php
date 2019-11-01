@@ -51,26 +51,30 @@ class UpdateLicensesCommand extends Command
     const DEFAULT_FILTERS = [];
 
     /**
-     * @param string License content
+     * License content
+     * 
+     * @param string $text
      */
     private $text;
 
     /**
-     * @param string License file path (not content)
+     * License file path (not content)
+     * 
+     * @param string $license
      */
     private $license;
 
     /**
      * List of extensions to update
      * 
-     * @param array
+     * @param array $extensions
      */
     private $extensions;
 
     /**
      * List of folders and files to exclude from the search
      * 
-     * @param array
+     * @param array $filters
      */
     private $filters;
 
@@ -124,11 +128,16 @@ class UpdateLicensesCommand extends Command
 
     private function findAndCheckExtension(OutputInterface $output, $ext)
     {
+        $dir = getcwd();
+        if ($dir === false) {
+            throw new \Exception('Could not get current directory. Check your permissions.');
+        }
+
         $finder = new Finder();
         $finder
             ->files()
             ->name('*.' . $ext)
-            ->in(getcwd())
+            ->in($dir)
             ->exclude($this->filters);
         $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
 
@@ -142,7 +151,7 @@ class UpdateLicensesCommand extends Command
                 case 'php':
                     try {
                         $nodes = $parser->parse($file->getContents());
-                        if (count($nodes)) {
+                        if ($nodes !== null && count($nodes)) {
                             $this->addLicenseToNode($nodes[0], $file);
                         }
                     } catch (\PhpParser\Error $exception) {
@@ -212,7 +221,7 @@ class UpdateLicensesCommand extends Command
     }
 
     /**
-     * @param $node
+     * @param \PhpParser\Node\Stmt $node
      * @param SplFileInfo $file
      */
     private function addLicenseToNode($node, SplFileInfo $file)
@@ -282,6 +291,6 @@ class UpdateLicensesCommand extends Command
         $content['author'] = 'PrestaShop';
         $content['license'] = (false !== strpos($this->license, 'afl')) ? 'AFL-3.0' : 'OSL-3.0';
 
-        return file_put_contents($file->getRelativePathname(), json_encode($content, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+        return false !== file_put_contents($file->getRelativePathname(), json_encode($content, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
     }
 }

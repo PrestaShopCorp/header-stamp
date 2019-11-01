@@ -27,18 +27,28 @@
 
 namespace PrestaShop\PimpMyHeader;
 
+/**
+ * Class responsible of loading license file in memory and returning its content
+ */
 class LicenseHeader
 {
     /**
-     * @param string Header content
+     * Header content
+     * 
+     * @param string $content
      */
     private $content;
 
     /**
-     * @param string Path to the file
+     * Path to the file
+     * 
+     * @param string $filePath
      */
     private $filePath;
 
+    /**
+     * @param string $filePath
+     */
     public function __construct($filePath)
     {
         $this->filePath = $filePath;

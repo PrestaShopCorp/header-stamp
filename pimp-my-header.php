@@ -11,5 +11,5 @@ $command = new UpdateLicensesCommand();
 
 $application->add($command);
 
-$application->setDefaultCommand($command->getName(), true);
+$application->setDefaultCommand($command->getName());
 $application->run();
