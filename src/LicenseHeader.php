@@ -74,13 +74,17 @@ class LicenseHeader
             // If the file is not found, we might have a relative path
             // We check this before throwing any exception
             $fromRelativeFilePath = getcwd() . '/' . $this->filePath;
+            $fromSrcFolderFilePath = __DIR__ . '/../' . $this->filePath;
 
-            if (!\file_exists($fromRelativeFilePath)) {
+            if (\file_exists($fromRelativeFilePath)) {
+                $this->filePath = $fromRelativeFilePath . $this->filePath;
+            } elseif (\file_exists($fromSrcFolderFilePath)) {
+                $this->filePath = $fromSrcFolderFilePath . $this->filePath;
+            } else {
                 throw new \Exception(
                     'File ' . $this->filePath . ' does not exist.'
                 );
             }
-            $this->filePath = $fromRelativeFilePath . $this->filePath;
         }
 
         if (!\is_readable($this->filePath)) {
