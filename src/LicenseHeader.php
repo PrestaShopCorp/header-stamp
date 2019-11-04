@@ -77,9 +77,9 @@ class LicenseHeader
             $fromSrcFolderFilePath = __DIR__ . '/../' . $this->filePath;
 
             if (\file_exists($fromRelativeFilePath)) {
-                $this->filePath = $fromRelativeFilePath . $this->filePath;
+                $this->filePath = $fromRelativeFilePath;
             } elseif (\file_exists($fromSrcFolderFilePath)) {
-                $this->filePath = $fromSrcFolderFilePath . $this->filePath;
+                $this->filePath = $fromSrcFolderFilePath;
             } else {
                 throw new \Exception(
                     'File ' . $this->filePath . ' does not exist.'
