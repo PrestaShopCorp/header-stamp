@@ -7,7 +7,7 @@ Update the headers of the current folder. This tools extracts the command origin
 This projet is downloadable via Composer, the PHP Package Manager. We recommend having it in the `require-dev` section of your dependancies as it is not needed on production environments.
 
 ```
-composer require --dev prestashop/pimp-my-header
+composer require --dev prestashop/header-stamp
 ```
 
 ## Usage
@@ -15,7 +15,7 @@ composer require --dev prestashop/pimp-my-header
 If installed via Composer, the application is available in its binaries folder
 
 ```
-php vendor/bin/pimp-my-header
+php vendor/bin/header-stamp
 ```
 
 The default behavior is to apply the OSL license in every compatible file found in the current folder.

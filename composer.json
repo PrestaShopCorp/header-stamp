@@ -1,5 +1,5 @@
 {
-    "name": "prestashop/pimp-my-header",
+    "name": "prestashop/header-stamp",
     "description": "Rewrite your file headers to add the license or to make them up-to-date",
     "homepage": "https://github.com/PrestaShop/pimp_my_header",
     "license": "AFL-3.0",
@@ -23,10 +23,10 @@
             "php": "5.6"
         }
     },
-    "bin": ["bin/pimp-my-header"],
+    "bin": ["bin/header-stamp"],
     "autoload": {
         "psr-4": {
-            "PrestaShop\\PimpMyHeader\\": "src/"
+            "PrestaShop\\HeaderStamp\\": "src/"
         }
     },
     "author": "PrestaShop",

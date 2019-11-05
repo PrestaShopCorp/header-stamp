@@ -1,7 +1,7 @@
 parameters:
   paths:
     - src/
-    - bin/pimp-my-header
+    - bin/header-stamp
   level: 7
   inferPrivatePropertyTypeFromConstructor: true
   ignoreErrors:

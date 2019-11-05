@@ -35,10 +35,10 @@ foreach ($autoloadFiles as $autoloadFile) {
     }
 }
 
-use PrestaShop\PimpMyHeader\Command\UpdateLicensesCommand;
+use PrestaShop\HeaderStamp\Command\UpdateLicensesCommand;
 use Symfony\Component\Console\Application;
 
-$application = new Application('pimp-my-header', '1.0.0');
+$application = new Application('header-stamp', '1.0.0');
 $command = new UpdateLicensesCommand();
 
 $application->add($command);
