@@ -24,7 +24,7 @@
  * International Registered Trademark & Property of PrestaShop SA
  */
 
-namespace PrestaShop\PimpMyHeader;
+namespace PrestaShop\HeaderStamp;
 
 /**
  * Class responsible of loading license file in memory and returning its content

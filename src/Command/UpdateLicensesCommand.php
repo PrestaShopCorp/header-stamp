@@ -24,10 +24,10 @@
  * International Registered Trademark & Property of PrestaShop SA
  */
 
-namespace PrestaShop\PimpMyHeader\Command;
+namespace PrestaShop\HeaderStamp\Command;
 
 use PhpParser\ParserFactory;
-use PrestaShop\PimpMyHeader\LicenseHeader;
+use PrestaShop\HeaderStamp\LicenseHeader;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
