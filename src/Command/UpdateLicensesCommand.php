@@ -193,7 +193,7 @@ class UpdateLicensesCommand extends Command
         $content = $file->getContents();
         // Regular expression found thanks to Stephen Ostermiller's Blog. http://blog.ostermiller.org/find-comment
         $regex = '%' . $startDelimiter . '\*([^*]|[\r\n]|(\*+([^*' . $endDelimiter . ']|[\r\n])))*\*+' . $endDelimiter . '%';
-        $matches = array();
+        $matches = [];
         $text = $this->text;
         if ($startDelimiter != '\/') {
             $text = $startDelimiter . ltrim($text, '/');
@@ -222,7 +222,6 @@ class UpdateLicensesCommand extends Command
 
     /**
      * @param \PhpParser\Node\Stmt $node
-     * @param SplFileInfo $file
      */
     private function addLicenseToNode($node, SplFileInfo $file)
     {
@@ -250,17 +249,11 @@ class UpdateLicensesCommand extends Command
         }
     }
 
-    /**
-     * @param SplFileInfo $file
-     */
     private function addLicenseToSmartyTemplate(SplFileInfo $file)
     {
         $this->addLicenseToFile($file, '{', '}');
     }
 
-    /**
-     * @param SplFileInfo $file
-     */
     private function addLicenseToTwigTemplate(SplFileInfo $file)
     {
         if (strrpos($file->getRelativePathName(), 'html.twig') !== false) {
@@ -268,22 +261,17 @@ class UpdateLicensesCommand extends Command
         }
     }
 
-    /**
-     * @param SplFileInfo $file
-     */
     private function addLicenseToHtmlFile(SplFileInfo $file)
     {
         $this->addLicenseToFile($file, '<!--', '-->');
     }
 
     /**
-     * @param SplFileInfo $file
-     *
      * @return bool
      */
     private function addLicenseToJsonFile(SplFileInfo $file)
     {
-        if (!in_array($file->getFilename(), array('composer.json', 'package.json'))) {
+        if (!in_array($file->getFilename(), ['composer.json', 'package.json'])) {
             return false;
         }
 

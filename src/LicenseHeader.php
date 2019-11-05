@@ -81,16 +81,12 @@ class LicenseHeader
             } elseif (\file_exists($fromSrcFolderFilePath)) {
                 $this->filePath = $fromSrcFolderFilePath;
             } else {
-                throw new \Exception(
-                    'File ' . $this->filePath . ' does not exist.'
-                );
+                throw new \Exception('File ' . $this->filePath . ' does not exist.');
             }
         }
 
         if (!\is_readable($this->filePath)) {
-            throw new \Exception(
-                'File ' . $this->filePath . ' cannot be read.'
-            );
+            throw new \Exception('File ' . $this->filePath . ' cannot be read.');
         }
 
         $this->content = \file_get_contents($this->filePath);

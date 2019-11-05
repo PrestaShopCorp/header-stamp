@@ -1,4 +1,4 @@
-# Pimp My Header
+# Header Stamp
 
 Update the headers of the current folder. This tools extracts the command originally available in the PrestaShop Core.
 
