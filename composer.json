@@ -31,6 +31,6 @@
     },
     "author": "PrestaShop",
     "require-dev": {
-        "prestashop/php-coding-standards": "dev-master"
+        "prestashop/php-dev-tools": "1.*"
     }
 }
