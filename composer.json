@@ -1,7 +1,7 @@
 {
     "name": "prestashop/header-stamp",
     "description": "Rewrite your file headers to add the license or to make them up-to-date",
-    "homepage": "https://github.com/PrestaShop/pimp_my_header",
+    "homepage": "https://github.com/PrestaShopCorp/header-stamp",
     "license": "AFL-3.0",
     "authors": [
         {
@@ -31,6 +31,6 @@
     },
     "author": "PrestaShop",
     "require-dev": {
-        "prestashop/php-coding-standards": "dev-master"
+        "prestashop/php-dev-tools": "1.*"
     }
 }
