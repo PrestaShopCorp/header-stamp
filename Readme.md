@@ -35,3 +35,13 @@ Available options:
 --exclude=EXCLUDE        Comma-separated list of folders and files to exclude from the update [default: ""]
 --extensions=EXTENSIONS  Comma-separated list of file extensions to update [default: "php,js,css,tpl,html.twig,json,vue"]
 ```
+
+## Development
+
+Install dependencies with composer. Two CI tools are configured for this project: php-cs-fixer and phpstan
+
+```
+composer install
+php vendor/bin/php-cs-fixer fix --no-interaction --dry-run --diff
+php phpstan analyse tests/phpstan/phpstan.neon
+```

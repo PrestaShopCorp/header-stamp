@@ -33,7 +33,6 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\Output;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Finder\Finder;
@@ -347,7 +346,7 @@ class UpdateLicensesCommand extends Command
             return false;
         }
 
-        $content = (array)json_decode($file->getContents());
+        $content = (array) json_decode($file->getContents());
         $oldContent = $content;
         $content['author'] = 'PrestaShop';
         $content['license'] = (false !== strpos($this->license, 'afl')) ? 'AFL-3.0' : 'OSL-3.0';
@@ -363,7 +362,7 @@ class UpdateLicensesCommand extends Command
 
         $this->reportOperationResult($content, $oldContent, $file->getFilename());
 
-        return (false !== $result);
+        return false !== $result;
     }
 
     private function reportOperationResult($newFileContent, $oldFileContent, $filename)
