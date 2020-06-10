@@ -171,9 +171,9 @@ class UpdateLicensesCommand extends Command
 
         if ($this->runAsDry) {
             if (empty($this->reporter->getReport()['fixed'])) {
-                return 1;
-            } else {
                 return 0;
+            } else {
+                return 1;
             }
         }
     }
