@@ -16,11 +16,17 @@ composer require --dev prestashop/header-stamp
 
 If installed via Composer, the application is available in its binaries folder
 
-```
+```php
 php vendor/bin/header-stamp
 ```
 
 The default behavior is to apply the OSL license in every compatible file found in the current folder.
+
+:warning: Header Stamp will scan and process all your compatible files, including `node_modules` or `vendor` if you do not specify the target. Use `--exclude` to avoid modifying dependency files.
+
+```php
+php vendor/bin/header-stamp --exclude=vendor,node_modules
+```
 
 Available options:
 
