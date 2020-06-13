@@ -4,10 +4,10 @@
  *
  * NOTICE OF LICENSE
  *
- * This source file is subject to the Open Software License (OSL 3.0)
+ * This source file is subject to the Academic Free License 3.0 (AFL-3.0)
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
- * https://opensource.org/licenses/OSL-3.0
+ * https://opensource.org/licenses/AFL-3.0
  * If you did not receive a copy of the license and are unable to
  * obtain it through the world-wide-web, please send an email
  * to license@prestashop.com so we can send you a copy immediately.
@@ -20,7 +20,7 @@
  *
  * @author    PrestaShop SA <contact@prestashop.com>
  * @copyright 2007-2020 PrestaShop SA and Contributors
- * @license   https://opensource.org/licenses/OSL-3.0 Open Software License (OSL 3.0)
+ * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0 (AFL-3.0)
  * International Registered Trademark & Property of PrestaShop SA
  */
 
@@ -138,7 +138,7 @@ class UpdateLicensesCommand extends Command
                 'dry-run',
                 null,
                 InputOption::VALUE_NONE,
-                false
+                'Dry-run mode does not modify files'
             );
     }
 
@@ -165,16 +165,16 @@ class UpdateLicensesCommand extends Command
             $this->findAndCheckExtension($input, $output, $extension);
         }
 
-        if ($this->displayReport) {
-            $this->printPrettyReport($input, $output);
-        }
-
         if ($this->runAsDry) {
+            $this->printDryRunPrettyReport($input, $output);
+
             if (empty($this->reporter->getReport()['fixed'])) {
                 return 0;
             } else {
                 return 1;
             }
+        } elseif ($this->displayReport) {
+            $this->printPrettyReport($input, $output);
         }
     }
 
@@ -388,5 +388,19 @@ class UpdateLicensesCommand extends Command
             $style->text(ucfirst($section) . ':');
             $style->listing($report[$section]);
         }
+    }
+
+    private function printDryRunPrettyReport(InputInterface $input, OutputInterface $output)
+    {
+        $style = new SymfonyStyle($input, $output);
+        $style->section('Header Stamp Dry Run Report');
+
+        $report = $this->reporter->getReport();
+
+        if (empty($report['fixed'])) {
+            return;
+        }
+        $style->text('Files with bad license headers:');
+        $style->listing($report['fixed']);
     }
 }
