@@ -153,11 +153,7 @@ class UpdateLicensesCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->text = str_replace(
-            '{currentYear}',
-            date('Y'),
-            (new LicenseHeader($this->license))->getContent()
-        );
+        $this->text = (new LicenseHeader($this->license))->getContent();
 
         $this->reporter = new Reporter();
 
@@ -170,10 +166,12 @@ class UpdateLicensesCommand extends Command
 
             if (empty($this->reporter->getReport()['fixed'])) {
                 return 0;
-            } else {
-                return 1;
             }
-        } elseif ($this->displayReport) {
+
+            return 1;
+        }
+
+        if ($this->displayReport) {
             $this->printPrettyReport($input, $output);
         }
     }
