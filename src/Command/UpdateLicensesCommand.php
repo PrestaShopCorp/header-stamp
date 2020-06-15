@@ -153,7 +153,7 @@ class UpdateLicensesCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->text = (new LicenseHeader($this->license))->getContent();
+        $this->text = trim((new LicenseHeader($this->license))->getContent(), PHP_EOL);
 
         $this->reporter = new Reporter();
 
