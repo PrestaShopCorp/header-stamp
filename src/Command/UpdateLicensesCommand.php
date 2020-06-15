@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 PrestaShop and Contributors
+ * 2007-2020 PrestaShop and Contributors
  *
  * NOTICE OF LICENSE
  *
@@ -19,7 +19,7 @@
  * needs please refer to https://www.prestashop.com for more information.
  *
  * @author    PrestaShop SA <contact@prestashop.com>
- * @copyright 2007-2019 PrestaShop SA and Contributors
+ * @copyright 2007-2020 PrestaShop SA and Contributors
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0 (AFL-3.0)
  * International Registered Trademark & Property of PrestaShop SA
  */
@@ -28,11 +28,13 @@ namespace PrestaShop\HeaderStamp\Command;
 
 use PhpParser\ParserFactory;
 use PrestaShop\HeaderStamp\LicenseHeader;
+use PrestaShop\HeaderStamp\Reporter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
 
@@ -78,6 +80,28 @@ class UpdateLicensesCommand extends Command
      */
     private $filters;
 
+    /**
+     * dry-run feature flag
+     *
+     * @var bool
+     */
+    private $runAsDry;
+
+    /**
+     * display-report feature flag
+     *
+     * @var bool
+     */
+    private $displayReport;
+
+    /**
+     * Reporter in charge of monitoring what is done and provide a complete report
+     * at the end of execution
+     *
+     * @var Reporter
+     */
+    private $reporter;
+
     protected function configure()
     {
         $this
@@ -103,6 +127,18 @@ class UpdateLicensesCommand extends Command
                 InputOption::VALUE_REQUIRED,
                 'Comma-separated list of file extensions to update',
                 implode(',', self::DEFAULT_EXTENSIONS)
+            )
+            ->addOption(
+                'display-report',
+                null,
+                InputOption::VALUE_NONE,
+                'Whether or not to display a report'
+            )
+            ->addOption(
+                'dry-run',
+                null,
+                InputOption::VALUE_NONE,
+                'Dry-run mode does not modify files'
             );
     }
 
@@ -111,6 +147,8 @@ class UpdateLicensesCommand extends Command
         $this->extensions = explode(',', $input->getOption('extensions'));
         $this->filters = explode(',', $input->getOption('exclude'));
         $this->license = $input->getOption('license');
+        $this->runAsDry = ($input->getOption('dry-run') === true);
+        $this->displayReport = ($input->getOption('display-report') === true);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -121,12 +159,26 @@ class UpdateLicensesCommand extends Command
             (new LicenseHeader($this->license))->getContent()
         );
 
+        $this->reporter = new Reporter();
+
         foreach ($this->extensions as $extension) {
-            $this->findAndCheckExtension($output, $extension);
+            $this->findAndCheckExtension($input, $output, $extension);
+        }
+
+        if ($this->runAsDry) {
+            $this->printDryRunPrettyReport($input, $output);
+
+            if (empty($this->reporter->getReport()['fixed'])) {
+                return 0;
+            } else {
+                return 1;
+            }
+        } elseif ($this->displayReport) {
+            $this->printPrettyReport($input, $output);
         }
     }
 
-    private function findAndCheckExtension(OutputInterface $output, $ext)
+    private function findAndCheckExtension(InputInterface $input, OutputInterface $output, $ext)
     {
         $dir = getcwd();
         if ($dir === false) {
@@ -156,6 +208,7 @@ class UpdateLicensesCommand extends Command
                         }
                     } catch (\PhpParser\Error $exception) {
                         $output->writeln('Syntax error on file ' . $file->getRelativePathname() . '. Continue ...');
+                        $this->reporter->reportLicenseCouldNotBeFixed($file->getFilename());
                     }
 
                     break;
@@ -191,6 +244,7 @@ class UpdateLicensesCommand extends Command
     private function addLicenseToFile($file, $startDelimiter = '\/', $endDelimiter = '\/')
     {
         $content = $file->getContents();
+        $oldContent = $content;
         // Regular expression found thanks to Stephen Ostermiller's Blog. http://blog.ostermiller.org/find-comment
         $regex = '%' . $startDelimiter . '\*([^*]|[\r\n]|(\*+([^*' . $endDelimiter . ']|[\r\n])))*\*+' . $endDelimiter . '%';
         $matches = [];
@@ -217,7 +271,10 @@ class UpdateLicensesCommand extends Command
             $content = $text . "\n" . $content;
         }
 
-        file_put_contents($file->getRelativePathname(), $content);
+        if (!$this->runAsDry) {
+            file_put_contents($file->getRelativePathname(), $content);
+        }
+        $this->reportOperationResult($content, $oldContent, $file->getFilename());
     }
 
     /**
@@ -234,7 +291,12 @@ class UpdateLicensesCommand extends Command
             // Important, if the <?php is in the middle of the file, continue
             if ($pos === 0) {
                 $newstring = substr_replace($haystack, $replace, $pos, strlen($needle));
-                file_put_contents($file->getRelativePathname(), $newstring);
+
+                if (!$this->runAsDry) {
+                    file_put_contents($file->getRelativePathname(), $newstring);
+                }
+
+                $this->reportOperationResult($newstring, $haystack, $file->getFilename());
             }
 
             return;
@@ -244,7 +306,16 @@ class UpdateLicensesCommand extends Command
         foreach ($comments as $comment) {
             if ($comment instanceof \PhpParser\Comment
                 && strpos($comment->getText(), 'prestashop') !== false) {
-                file_put_contents($file->getRelativePathname(), str_replace($comment->getText(), $this->text, $file->getContents()));
+                $newContent = str_replace($comment->getText(), $this->text, $file->getContents());
+
+                if (!$this->runAsDry) {
+                    file_put_contents(
+                        $file->getRelativePathname(),
+                        $newContent
+                    );
+                }
+
+                $this->reportOperationResult($newContent, $file->getContents(), $file->getFilename());
             }
         }
     }
@@ -276,9 +347,60 @@ class UpdateLicensesCommand extends Command
         }
 
         $content = (array) json_decode($file->getContents());
+        $oldContent = $content;
         $content['author'] = 'PrestaShop';
         $content['license'] = (false !== strpos($this->license, 'afl')) ? 'AFL-3.0' : 'OSL-3.0';
 
-        return false !== file_put_contents($file->getRelativePathname(), json_encode($content, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+        if (!$this->runAsDry) {
+            $result = file_put_contents(
+                $file->getRelativePathname(),
+                json_encode($content, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+            );
+        } else {
+            $result = true;
+        }
+
+        $this->reportOperationResult($content, $oldContent, $file->getFilename());
+
+        return false !== $result;
+    }
+
+    private function reportOperationResult($newFileContent, $oldFileContent, $filename)
+    {
+        if ($newFileContent != $oldFileContent) {
+            $this->reporter->reportLicenseHasBeenFixed($filename);
+        } else {
+            $this->reporter->reportLicenseWasFine($filename);
+        }
+    }
+
+    private function printPrettyReport(InputInterface $input, OutputInterface $output)
+    {
+        $style = new SymfonyStyle($input, $output);
+        $style->section('Header Stamp Report');
+
+        $report = $this->reporter->getReport();
+        $sections = ['fixed', 'nothing to fix', 'failed'];
+        foreach ($sections as $section) {
+            if (empty($report[$section])) {
+                continue;
+            }
+            $style->text(ucfirst($section) . ':');
+            $style->listing($report[$section]);
+        }
+    }
+
+    private function printDryRunPrettyReport(InputInterface $input, OutputInterface $output)
+    {
+        $style = new SymfonyStyle($input, $output);
+        $style->section('Header Stamp Dry Run Report');
+
+        $report = $this->reporter->getReport();
+
+        if (empty($report['fixed'])) {
+            return;
+        }
+        $style->text('Files with bad license headers:');
+        $style->listing($report['fixed']);
     }
 }

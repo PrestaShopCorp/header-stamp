@@ -1,4 +1,3 @@
-#!/usr/bin/env php
 <?php
 /**
  * 2007-2020 PrestaShop and Contributors
@@ -25,23 +24,39 @@
  * International Registered Trademark & Property of PrestaShop SA
  */
 
-$autoloadFiles = [
-  __DIR__ . '/../../../autoload.php',
-  __DIR__ . '/../vendor/autoload.php',
-];
-foreach ($autoloadFiles as $autoloadFile) {
-    if (file_exists($autoloadFile)) {
-        require_once $autoloadFile;
+namespace PrestaShop\HeaderStamp;
+
+/**
+ * Reporter in charge of reporting what HeaderStamp has done
+ */
+class Reporter
+{
+    private $report = [
+        'fixed' => [],
+        'ignored' => [],
+        'failed' => [],
+    ];
+
+    public function reportLicenseHasBeenFixed($fixedFilename)
+    {
+        $this->report['fixed'][] = $fixedFilename;
+    }
+
+    public function reportLicenseWasFine($fixedFilename)
+    {
+        $this->report['nothing to fix'][] = $fixedFilename;
+    }
+
+    public function reportLicenseCouldNotBeFixed($fixedFilename)
+    {
+        $this->report['failed'][] = $fixedFilename;
+    }
+
+    /**
+     * @return array[]
+     */
+    public function getReport()
+    {
+        return $this->report;
     }
 }
-
-use PrestaShop\HeaderStamp\Command\UpdateLicensesCommand;
-use Symfony\Component\Console\Application;
-
-$application = new Application('header-stamp', '1.1.0');
-$command = new UpdateLicensesCommand();
-
-$application->add($command);
-
-$application->setDefaultCommand($command->getName());
-$application->run();
