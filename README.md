@@ -33,7 +33,7 @@ Available options:
 ```
 --license=LICENSE        License file to apply [default: "assets/osl3.txt"]
 --exclude=EXCLUDE        Comma-separated list of folders and files to exclude from the update [default: ""]
---extensions=EXTENSIONS  Comma-separated list of file extensions to update [default: "php,js,css,tpl,html.twig,json,vue"]
+--extensions=EXTENSIONS  Comma-separated list of file extensions to update [default: "php,js,css,scss,tpl,html.twig,json,vue"]
 ```
 
 ## Development
