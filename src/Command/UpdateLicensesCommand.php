@@ -45,6 +45,7 @@ class UpdateLicensesCommand extends Command
         'php',
         'js',
         'css',
+        'scss',
         'tpl',
         'html.twig',
         'json',
@@ -212,6 +213,7 @@ class UpdateLicensesCommand extends Command
                     break;
                 case 'js':
                 case 'css':
+                case 'scss':
                     $this->addLicenseToFile($file);
 
                     break;
