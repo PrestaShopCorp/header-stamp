@@ -68,6 +68,11 @@ class UpdateLicensesCommand extends Command
     private $license;
 
     /**
+     * @var string
+     */
+    private $targetDirectory;
+
+    /**
      * List of extensions to update
      *
      * @param array $extensions
@@ -116,6 +121,12 @@ class UpdateLicensesCommand extends Command
                 realpath(self::DEFAULT_LICENSE_FILE)
             )
             ->addOption(
+                'target',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'targeted folder (default: current dir)'
+            )
+            ->addOption(
                 'exclude',
                 null,
                 InputOption::VALUE_REQUIRED,
@@ -148,6 +159,11 @@ class UpdateLicensesCommand extends Command
         $this->extensions = explode(',', $input->getOption('extensions'));
         $this->filters = explode(',', $input->getOption('exclude'));
         $this->license = $input->getOption('license');
+        if ($input->getOption('target')) {
+            $this->targetDirectory = realpath($input->getOption('target'));
+        } else {
+            $this->targetDirectory = getcwd();
+        }
         $this->runAsDry = ($input->getOption('dry-run') === true);
         $this->displayReport = ($input->getOption('display-report') === true);
     }
@@ -175,20 +191,21 @@ class UpdateLicensesCommand extends Command
         if ($this->displayReport) {
             $this->printPrettyReport($input, $output);
         }
+
+        return 0;
     }
 
     private function findAndCheckExtension(InputInterface $input, OutputInterface $output, $ext)
     {
-        $dir = getcwd();
-        if ($dir === false) {
-            throw new \Exception('Could not get current directory. Check your permissions.');
+        if ($this->targetDirectory === false) {
+            throw new \Exception('Could not get target directory. Check your permissions.');
         }
 
         $finder = new Finder();
         $finder
             ->files()
             ->name('*.' . $ext)
-            ->in($dir)
+            ->in($this->targetDirectory)
             ->exclude($this->filters);
         $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
 
@@ -272,7 +289,7 @@ class UpdateLicensesCommand extends Command
         }
 
         if (!$this->runAsDry) {
-            file_put_contents($file->getRelativePathname(), $content);
+            file_put_contents($this->targetDirectory . '/' . $file->getRelativePathname(), $content);
         }
         $this->reportOperationResult($content, $oldContent, $file->getFilename());
     }
@@ -293,7 +310,7 @@ class UpdateLicensesCommand extends Command
                 $newstring = substr_replace($haystack, $replace, $pos, strlen($needle));
 
                 if (!$this->runAsDry) {
-                    file_put_contents($file->getRelativePathname(), $newstring);
+                    file_put_contents($this->targetDirectory . '/' . $file->getRelativePathname(), $newstring);
                 }
 
                 $this->reportOperationResult($newstring, $haystack, $file->getFilename());
@@ -310,7 +327,7 @@ class UpdateLicensesCommand extends Command
 
                 if (!$this->runAsDry) {
                     file_put_contents(
-                        $file->getRelativePathname(),
+                        $this->targetDirectory . '/' . $file->getRelativePathname(),
                         $newContent
                     );
                 }
@@ -353,7 +370,7 @@ class UpdateLicensesCommand extends Command
 
         if (!$this->runAsDry) {
             $result = file_put_contents(
-                $file->getRelativePathname(),
+                $this->targetDirectory . '/' . $file->getRelativePathname(),
                 json_encode($content, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
             );
         } else {
