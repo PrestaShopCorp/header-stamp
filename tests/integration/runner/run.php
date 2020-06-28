@@ -48,12 +48,12 @@ foreach ($modulesToTest as $moduleName => $config) {
     if (!empty($check)) {
         printErrorsList($moduleName, $check);
 
-        return 1;
+        exit(1);
     }
     if (!empty($check2)) {
         printErrorsList($moduleName, $check2);
 
-        return 1;
+        exit(1);
     }
 
     printSuccessMessage(' - module ' . $moduleName . ' processed successfully' . PHP_EOL);
@@ -61,4 +61,4 @@ foreach ($modulesToTest as $moduleName => $config) {
 
 printSuccessMessage('Integration tests run successfully' . PHP_EOL);
 
-return 0;
+exit(0);
