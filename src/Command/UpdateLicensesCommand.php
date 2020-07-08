@@ -124,7 +124,7 @@ class UpdateLicensesCommand extends Command
                 'target',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'targeted folder (default: current dir)'
+                'Folder to work in (default: current dir)'
             )
             ->addOption(
                 'exclude',

@@ -35,6 +35,9 @@ Available options:
 --license=LICENSE        License file to apply [default: "assets/osl3.txt"]
 --exclude=EXCLUDE        Comma-separated list of folders and files to exclude from the update [default: ""]
 --extensions=EXTENSIONS  Comma-separated list of file extensions to update [default: "php,js,css,scss,tpl,html.twig,json,vue"]
+--target=PATH            Folder to work in [default: Current directory]
+--dry-run                Dry-run mode does not modify files
+--display-report         Whether or not to display a report
 ```
 
 ## Development
@@ -45,4 +48,10 @@ Install dependencies with composer. Two CI tools are configured for this project
 composer install
 php vendor/bin/php-cs-fixer fix --no-interaction --dry-run --diff
 php phpstan analyse tests/phpstan/phpstan.neon
+```
+
+Before submitting changes to the projects, tests can be run with:
+
+```
+php tests/integration/runner/run.php
 ```
