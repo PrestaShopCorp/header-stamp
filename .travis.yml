@@ -22,3 +22,4 @@ script:
       composer global require phpstan/phpstan-shim:0.11.19;
       ~/.composer/vendor/bin/phpstan analyse --configuration=$PWD/tests/phpstan/phpstan.neon;
     fi
+  - php tests/integration/runner/run.php
