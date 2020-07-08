@@ -11,7 +11,8 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Filesystem\Filesystem;
 
 $modulesToTest = [
-    'gsitemap' => [],
+    'gsitemap',
+    'dashproducts'
 ];
 $workspaceID = 100;
 $filesystem = new Filesystem();
@@ -19,7 +20,7 @@ $folderComparator = new FolderComparator();
 
 $application = buildTestApplication();
 
-foreach ($modulesToTest as $moduleName => $config) {
+foreach ($modulesToTest as $moduleName) {
     ++$workspaceID;
     $moduleFolderpath = __DIR__ . '/../module-samples/' . $moduleName;
     $expectedModuleFolderpath = __DIR__ . '/../expected/' . $moduleName;
