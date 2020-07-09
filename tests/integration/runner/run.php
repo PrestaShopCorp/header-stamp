@@ -13,6 +13,7 @@ use Symfony\Component\Filesystem\Filesystem;
 $modulesToTest = [
     'gsitemap',
     'dashproducts',
+    'fakemodule',
 ];
 $workspaceID = 100;
 $filesystem = new Filesystem();
