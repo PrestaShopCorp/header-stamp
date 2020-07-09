@@ -6,8 +6,6 @@ $config
     ->setUsingCache(false)
     ->getFinder()
     ->in(__DIR__)
-    ->exclude('vendor', 'tests/integration/module-samples', 'tests/integration/expected')
-    ->exclude('tests/integration/module-samples')
-    ->exclude('tests/integration/expected');
+    ->exclude(['vendor', 'tests/integration/module-samples', 'tests/integration/expected']);
 
 return $config;
