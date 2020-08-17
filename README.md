@@ -1,7 +1,6 @@
 # Header Stamp
 
 ![PHP tests](https://github.com/PrestaShopCorp/header-stamp/workflows/PHP%20tests/badge.svg)
-[![Build Status](https://travis-ci.com/PrestaShopCorp/header-stamp.svg?branch=master)](https://travis-ci.com/PrestaShopCorp/header-stamp)
 
 Update the headers of the current folder. This tools extracts the command originally available in the PrestaShop Core.
 
