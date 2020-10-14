@@ -118,7 +118,7 @@ class UpdateLicensesCommand extends Command
                 null,
                 InputOption::VALUE_REQUIRED,
                 'License file to apply',
-                realpath(self::DEFAULT_LICENSE_FILE)
+                realpath(static::DEFAULT_LICENSE_FILE)
             )
             ->addOption(
                 'target',
@@ -131,14 +131,14 @@ class UpdateLicensesCommand extends Command
                 null,
                 InputOption::VALUE_REQUIRED,
                 'Comma-separated list of folders and files to exclude from the update',
-                implode(',', self::DEFAULT_FILTERS)
+                implode(',', static::DEFAULT_FILTERS)
             )
             ->addOption(
                 'extensions',
                 null,
                 InputOption::VALUE_REQUIRED,
                 'Comma-separated list of file extensions to update',
-                implode(',', self::DEFAULT_EXTENSIONS)
+                implode(',', static::DEFAULT_EXTENSIONS)
             )
             ->addOption(
                 'display-report',
