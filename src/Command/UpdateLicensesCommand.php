@@ -52,6 +52,7 @@ class UpdateLicensesCommand extends Command
         'vue',
     ];
     const DEFAULT_FILTERS = [];
+    const DEFAULT_IGNORED_FILES = [];
 
     /**
      * License content
@@ -206,7 +207,8 @@ class UpdateLicensesCommand extends Command
             ->files()
             ->name('*.' . $ext)
             ->in($this->targetDirectory)
-            ->exclude($this->filters);
+            ->exclude($this->filters)
+            ->filter($this->getFinderFilter());
         $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
 
         $output->writeln('Updating license in ' . strtoupper($ext) . ' files ...');
@@ -419,5 +421,17 @@ class UpdateLicensesCommand extends Command
         }
         $style->text('Files with bad license headers:');
         $style->listing($report['fixed']);
+    }
+
+    /**
+     * Closure to filter parsed files.
+     *
+     * @see https://symfony.com/doc/3.4/components/finder.html#custom-filtering
+     */
+    protected function getFinderFilter()//: \Closure
+    {
+        return function (\SplFileInfo $file) {
+            return !in_array($file->getBasename(), static::DEFAULT_IGNORED_FILES);
+        };
     }
 }
