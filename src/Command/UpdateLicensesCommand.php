@@ -80,7 +80,7 @@ class UpdateLicensesCommand extends Command
     private $extensions;
 
     /**
-     * List of folders and files to exclude from the search
+     * List of folders to exclude from the search
      *
      * @param array $filters
      */
@@ -130,7 +130,7 @@ class UpdateLicensesCommand extends Command
                 'exclude',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Comma-separated list of folders and files to exclude from the update',
+                'Comma-separated list of folders to exclude from the update',
                 implode(',', self::DEFAULT_FILTERS)
             )
             ->addOption(
