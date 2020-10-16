@@ -279,7 +279,7 @@ class UpdateLicensesCommand extends Command
         if (count($matches)) {
             // Found - Replace it if prestashop one
             foreach ($matches as $match) {
-                if (stripos($match, 'prestashop') !== false) {
+                if ($this->shouldProcessForCurrentComment($match)) {
                     $content = str_replace($match, $text, $content);
                 }
             }
@@ -419,5 +419,10 @@ class UpdateLicensesCommand extends Command
         }
         $style->text('Files with bad license headers:');
         $style->listing($report['fixed']);
+    }
+
+    protected function shouldProcessForCurrentComment($match)//: bool
+    {
+        return stripos($match, 'prestashop') !== false;
     }
 }
