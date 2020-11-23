@@ -14,6 +14,7 @@ $modulesToTest = [
     'gsitemap',
     'dashproducts',
     'fakemodule',
+    'existing-headers-discrimination',
 ];
 $workspaceID = 100;
 $filesystem = new Filesystem();
