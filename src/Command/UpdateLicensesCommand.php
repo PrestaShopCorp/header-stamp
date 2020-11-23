@@ -108,6 +108,11 @@ class UpdateLicensesCommand extends Command
      */
     private $reporter;
 
+    /**
+     * @var string
+     */
+    private $discriminationString;
+
     protected function configure()
     {
         $this
@@ -151,6 +156,13 @@ class UpdateLicensesCommand extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Dry-run mode does not modify files'
+            )
+            ->addOption(
+                'header-discrimination-string',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Fix existing licenses only if they contain that string',
+                'prestashop'
             );
     }
 
@@ -166,6 +178,7 @@ class UpdateLicensesCommand extends Command
         }
         $this->runAsDry = ($input->getOption('dry-run') === true);
         $this->displayReport = ($input->getOption('display-report') === true);
+        $this->discriminationString = $input->getOption('header-discrimination-string');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -279,7 +292,7 @@ class UpdateLicensesCommand extends Command
         if (count($matches)) {
             // Found - Replace it if prestashop one
             foreach ($matches as $match) {
-                if (stripos($match, 'prestashop') !== false) {
+                if (stripos($match, $this->discriminationString) !== false) {
                     $content = str_replace($match, $text, $content);
                 }
             }
@@ -322,7 +335,7 @@ class UpdateLicensesCommand extends Command
         $comments = $node->getAttribute('comments');
         foreach ($comments as $comment) {
             if ($comment instanceof \PhpParser\Comment
-                && strpos($comment->getText(), 'prestashop') !== false) {
+                && strpos($comment->getText(), $this->discriminationString) !== false) {
                 $newContent = str_replace($comment->getText(), $this->text, $file->getContents());
 
                 if (!$this->runAsDry) {
