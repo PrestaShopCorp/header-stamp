@@ -32,12 +32,12 @@ foreach ($modulesToTest as $moduleName) {
     $filesystem->mirror($moduleFolderpath, $workspaceFolderpath);
 
     // run UpdateLicensesCommand on workspace
-    $commandParameters   = ['command'   => 'prestashop:licenses:update',
-              '--license' => __DIR__ . '/../../../assets/afl.txt',
-              '--target'  => $workspaceFolderpath,
+    $commandParameters = ['command' => 'prestashop:licenses:update',
+                          '--license' => __DIR__ . '/../../../assets/afl.txt',
+                          '--target' => $workspaceFolderpath,
     ];
 
-    if('existing-headers-discrimination' === $moduleName) {
+    if ('existing-headers-discrimination' === $moduleName) {
         $commandParameters['--header-discrimination-string'] = 'friendsofpresta';
     }
 
