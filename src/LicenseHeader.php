@@ -28,20 +28,17 @@ class LicenseHeader
     /**
      * Header content
      *
-     * @var ?string $content
+     * @var ?string
      */
     private $content;
 
     /**
      * Path to the file
      *
-     * @var string $filePath
+     * @var string
      */
     private $filePath;
 
-    /**
-     * @param string $filePath
-     */
     public function __construct(string $filePath)
     {
         $this->filePath = $filePath;

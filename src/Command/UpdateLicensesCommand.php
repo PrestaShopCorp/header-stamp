@@ -20,6 +20,7 @@
 
 namespace PrestaShop\HeaderStamp\Command;
 
+use PhpParser\Node\Stmt;
 use PhpParser\ParserFactory;
 use PrestaShop\HeaderStamp\LicenseHeader;
 use PrestaShop\HeaderStamp\Reporter;
@@ -31,7 +32,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
-use PhpParser\Node\Stmt;
 
 class UpdateLicensesCommand extends Command
 {
@@ -51,14 +51,14 @@ class UpdateLicensesCommand extends Command
     /**
      * License content
      *
-     * @var string $text
+     * @var string
      */
     private $text;
 
     /**
      * License file path (not content)
      *
-     * @var string $license
+     * @var string
      */
     private $license;
 
@@ -70,14 +70,14 @@ class UpdateLicensesCommand extends Command
     /**
      * List of extensions to update
      *
-     * @var array<int, string> $extensions
+     * @var array<int, string>
      */
     private $extensions;
 
     /**
      * List of folders and files to exclude from the search
      *
-     * @var array<int, string> $filters
+     * @var array<int, string>
      */
     private $filters;
 
@@ -232,7 +232,7 @@ class UpdateLicensesCommand extends Command
             switch ($file->getExtension()) {
                 case 'php':
                     try {
-                       $nodes = $parser->parse($file->getContents());
+                        $nodes = $parser->parse($file->getContents());
                         if ($nodes !== null && count($nodes)) {
                             $this->addLicenseToNode($nodes[0], $file);
                         }
@@ -272,7 +272,7 @@ class UpdateLicensesCommand extends Command
         $output->writeln('');
     }
 
-    private function addLicenseToFile(SplFileInfo $file, string $startDelimiter = '\/', string $endDelimiter = '\/'):void
+    private function addLicenseToFile(SplFileInfo $file, string $startDelimiter = '\/', string $endDelimiter = '\/'): void
     {
         $content = $file->getContents();
         $oldContent = $content;
@@ -309,9 +309,6 @@ class UpdateLicensesCommand extends Command
         $this->reportOperationResult($content, $oldContent, $file->getFilename());
     }
 
-    /**
-     * @param \PhpParser\Node\Stmt $node
-     */
     private function addLicenseToNode(Stmt $node, SplFileInfo $file): void
     {
         if (!$node->hasAttribute('comments')) {
@@ -369,9 +366,6 @@ class UpdateLicensesCommand extends Command
         $this->addLicenseToFile($file, '<!--', '-->');
     }
 
-    /**
-     * @return bool
-     */
     private function addLicenseToJsonFile(SplFileInfo $file): bool
     {
         if (!in_array($file->getFilename(), ['composer.json', 'package.json'])) {
@@ -401,8 +395,8 @@ class UpdateLicensesCommand extends Command
     }
 
     /**
-     * @var string $newFileContent
-     * @var string $oldFileContent
+     * @var string
+     * @var string
      */
     private function reportOperationResult(string $newFileContent, string $oldFileContent, string $filename): void
     {
