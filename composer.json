@@ -10,20 +10,18 @@
         }
     ],
     "require": {
-        "php": ">=5.6",
         "symfony/console": "^3.4 || ~4.0 || ~5.0",
         "symfony/finder": "^3.4 || ~4.0 || ~5.0",
-        "nikic/php-parser": "^3.1"
+        "nikic/php-parser": "^4.10"
     },
     "config": {
         "preferred-install": "dist",
         "prepend-autoloader": false,
-        "optimize-autoloader": true,
-        "platform": {
-            "php": "5.6"
-        }
+        "optimize-autoloader": true
     },
-    "bin": ["bin/header-stamp"],
+    "bin": [
+        "bin/header-stamp"
+    ],
     "autoload": {
         "psr-4": {
             "PrestaShop\\HeaderStamp\\": "src/"
