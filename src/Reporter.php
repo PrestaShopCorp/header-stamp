@@ -25,31 +25,34 @@ namespace PrestaShop\HeaderStamp;
  */
 class Reporter
 {
+    /**
+     * @var array<string, array<int, string>>
+     */
     private $report = [
         'fixed' => [],
         'ignored' => [],
         'failed' => [],
     ];
 
-    public function reportLicenseHasBeenFixed($fixedFilename)
+    public function reportLicenseHasBeenFixed(string $fixedFilename): void
     {
         $this->report['fixed'][] = $fixedFilename;
     }
 
-    public function reportLicenseWasFine($fixedFilename)
+    public function reportLicenseWasFine(string $fixedFilename): void
     {
         $this->report['nothing to fix'][] = $fixedFilename;
     }
 
-    public function reportLicenseCouldNotBeFixed($fixedFilename)
+    public function reportLicenseCouldNotBeFixed(string $fixedFilename): void
     {
         $this->report['failed'][] = $fixedFilename;
     }
 
     /**
-     * @return array[]
+     * @return array<string, array<int, string>>
      */
-    public function getReport()
+    public function getReport(): array
     {
         return $this->report;
     }

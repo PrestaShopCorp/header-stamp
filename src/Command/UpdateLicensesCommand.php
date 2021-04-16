@@ -31,6 +31,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
+use PhpParser\Node\Stmt;
 
 class UpdateLicensesCommand extends Command
 {
@@ -50,33 +51,33 @@ class UpdateLicensesCommand extends Command
     /**
      * License content
      *
-     * @param string $text
+     * @var string $text
      */
     private $text;
 
     /**
      * License file path (not content)
      *
-     * @param string $license
+     * @var string $license
      */
     private $license;
 
     /**
-     * @var string
+     * @var string|false Can be false because of realpath function
      */
     private $targetDirectory;
 
     /**
      * List of extensions to update
      *
-     * @param array $extensions
+     * @var array<int, string> $extensions
      */
     private $extensions;
 
     /**
      * List of folders and files to exclude from the search
      *
-     * @param array $filters
+     * @var array<int, string> $filters
      */
     private $filters;
 
@@ -107,7 +108,7 @@ class UpdateLicensesCommand extends Command
      */
     private $discriminationString;
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('prestashop:licenses:update')
@@ -160,22 +161,28 @@ class UpdateLicensesCommand extends Command
             );
     }
 
-    protected function initialize(InputInterface $input, OutputInterface $output)
+    protected function initialize(InputInterface $input, OutputInterface $output): void
     {
         $this->extensions = explode(',', $input->getOption('extensions'));
         $this->filters = explode(',', $input->getOption('exclude'));
-        $this->license = $input->getOption('license');
-        if ($input->getOption('target')) {
-            $this->targetDirectory = realpath($input->getOption('target'));
+
+        $licenseOption = $input->getOption('license');
+        $this->license = is_string($licenseOption) ? $licenseOption : '';
+
+        $targetOption = $input->getOption('target');
+        if (is_string($targetOption) && !empty($targetOption)) {
+            $this->targetDirectory = realpath($targetOption);
         } else {
             $this->targetDirectory = getcwd();
         }
         $this->runAsDry = ($input->getOption('dry-run') === true);
         $this->displayReport = ($input->getOption('display-report') === true);
-        $this->discriminationString = $input->getOption('header-discrimination-string');
+
+        $discriminationOption = $input->getOption('header-discrimination-string');
+        $this->discriminationString = is_string($discriminationOption) ? $discriminationOption : '';
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->text = trim((new LicenseHeader($this->license))->getContent(), PHP_EOL);
 
@@ -202,7 +209,7 @@ class UpdateLicensesCommand extends Command
         return 0;
     }
 
-    private function findAndCheckExtension(InputInterface $input, OutputInterface $output, $ext)
+    private function findAndCheckExtension(InputInterface $input, OutputInterface $output, string $ext): void
     {
         if ($this->targetDirectory === false) {
             throw new \Exception('Could not get target directory. Check your permissions.');
@@ -225,7 +232,7 @@ class UpdateLicensesCommand extends Command
             switch ($file->getExtension()) {
                 case 'php':
                     try {
-                        $nodes = $parser->parse($file->getContents());
+                       $nodes = $parser->parse($file->getContents());
                         if ($nodes !== null && count($nodes)) {
                             $this->addLicenseToNode($nodes[0], $file);
                         }
@@ -265,7 +272,7 @@ class UpdateLicensesCommand extends Command
         $output->writeln('');
     }
 
-    private function addLicenseToFile($file, $startDelimiter = '\/', $endDelimiter = '\/')
+    private function addLicenseToFile(SplFileInfo $file, string $startDelimiter = '\/', string $endDelimiter = '\/'):void
     {
         $content = $file->getContents();
         $oldContent = $content;
@@ -298,13 +305,14 @@ class UpdateLicensesCommand extends Command
         if (!$this->runAsDry) {
             file_put_contents($this->targetDirectory . '/' . $file->getRelativePathname(), $content);
         }
+
         $this->reportOperationResult($content, $oldContent, $file->getFilename());
     }
 
     /**
      * @param \PhpParser\Node\Stmt $node
      */
-    private function addLicenseToNode($node, SplFileInfo $file)
+    private function addLicenseToNode(Stmt $node, SplFileInfo $file): void
     {
         if (!$node->hasAttribute('comments')) {
             $needle = '<?php';
@@ -344,19 +352,19 @@ class UpdateLicensesCommand extends Command
         }
     }
 
-    private function addLicenseToSmartyTemplate(SplFileInfo $file)
+    private function addLicenseToSmartyTemplate(SplFileInfo $file): void
     {
         $this->addLicenseToFile($file, '{', '}');
     }
 
-    private function addLicenseToTwigTemplate(SplFileInfo $file)
+    private function addLicenseToTwigTemplate(SplFileInfo $file): void
     {
         if (strrpos($file->getRelativePathName(), 'html.twig') !== false) {
             $this->addLicenseToFile($file, '{#', '#}');
         }
     }
 
-    private function addLicenseToHtmlFile(SplFileInfo $file)
+    private function addLicenseToHtmlFile(SplFileInfo $file): void
     {
         $this->addLicenseToFile($file, '<!--', '-->');
     }
@@ -364,13 +372,13 @@ class UpdateLicensesCommand extends Command
     /**
      * @return bool
      */
-    private function addLicenseToJsonFile(SplFileInfo $file)
+    private function addLicenseToJsonFile(SplFileInfo $file): bool
     {
         if (!in_array($file->getFilename(), ['composer.json', 'package.json'])) {
             return false;
         }
 
-        $content = (array) json_decode($file->getContents());
+        $content = json_decode($file->getContents(), true);
         $oldContent = $content;
         $content['author'] = 'PrestaShop';
         $content['license'] = (false !== strpos($this->license, 'afl')) ? 'AFL-3.0' : 'OSL-3.0';
@@ -384,21 +392,28 @@ class UpdateLicensesCommand extends Command
             $result = true;
         }
 
-        $this->reportOperationResult($content, $oldContent, $file->getFilename());
+        $newFileContent = (string) json_encode($content);
+        $oldFileContent = (string) json_encode($oldContent);
+
+        $this->reportOperationResult($newFileContent, $oldFileContent, $file->getFilename());
 
         return false !== $result;
     }
 
-    private function reportOperationResult($newFileContent, $oldFileContent, $filename)
+    /**
+     * @var string $newFileContent
+     * @var string $oldFileContent
+     */
+    private function reportOperationResult(string $newFileContent, string $oldFileContent, string $filename): void
     {
-        if ($newFileContent != $oldFileContent) {
+        if ($newFileContent !== $oldFileContent) {
             $this->reporter->reportLicenseHasBeenFixed($filename);
         } else {
             $this->reporter->reportLicenseWasFine($filename);
         }
     }
 
-    private function printPrettyReport(InputInterface $input, OutputInterface $output)
+    private function printPrettyReport(InputInterface $input, OutputInterface $output): void
     {
         $style = new SymfonyStyle($input, $output);
         $style->section('Header Stamp Report');
@@ -409,12 +424,13 @@ class UpdateLicensesCommand extends Command
             if (empty($report[$section])) {
                 continue;
             }
+
             $style->text(ucfirst($section) . ':');
             $style->listing($report[$section]);
         }
     }
 
-    private function printDryRunPrettyReport(InputInterface $input, OutputInterface $output)
+    private function printDryRunPrettyReport(InputInterface $input, OutputInterface $output): void
     {
         $style = new SymfonyStyle($input, $output);
         $style->section('Header Stamp Dry Run Report');
@@ -424,6 +440,7 @@ class UpdateLicensesCommand extends Command
         if (empty($report['fixed'])) {
             return;
         }
+
         $style->text('Files with bad license headers:');
         $style->listing($report['fixed']);
     }

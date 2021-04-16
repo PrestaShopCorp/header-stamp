@@ -28,21 +28,21 @@ class LicenseHeader
     /**
      * Header content
      *
-     * @param string $content
+     * @var ?string $content
      */
     private $content;
 
     /**
      * Path to the file
      *
-     * @param string $filePath
+     * @var string $filePath
      */
     private $filePath;
 
     /**
      * @param string $filePath
      */
-    public function __construct($filePath)
+    public function __construct(string $filePath)
     {
         $this->filePath = $filePath;
     }
@@ -50,7 +50,7 @@ class LicenseHeader
     /**
      * @return string Getter for Header content
      */
-    public function getContent()
+    public function getContent(): string
     {
         if (null === $this->content) {
             $this->loadFile();
@@ -62,7 +62,7 @@ class LicenseHeader
     /**
      * Checks the file and loads its content in memory
      */
-    private function loadFile()
+    private function loadFile(): void
     {
         if (!\file_exists($this->filePath)) {
             // If the file is not found, we might have a relative path
@@ -83,6 +83,11 @@ class LicenseHeader
             throw new \Exception('File ' . $this->filePath . ' cannot be read.');
         }
 
-        $this->content = \file_get_contents($this->filePath);
+        $content = \file_get_contents($this->filePath);
+        if ($content === false) {
+            return;
+        }
+
+        $this->content = $content;
     }
 }
