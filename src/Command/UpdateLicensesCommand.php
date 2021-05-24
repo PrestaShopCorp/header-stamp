@@ -1,28 +1,31 @@
 <?php
 /**
- * Copyright since 2007 PrestaShop SA and Contributors
- * PrestaShop is an International Registered Trademark & Property of PrestaShop SA
+ * 2007-2020 PrestaShop and Contributors
  *
  * NOTICE OF LICENSE
  *
- * This source file is subject to the Academic Free License version 3.0
- * that is bundled with this package in the file LICENSE.md.
+ * This source file is subject to the Academic Free License 3.0 (AFL-3.0)
+ * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * https://opensource.org/licenses/AFL-3.0
  * If you did not receive a copy of the license and are unable to
  * obtain it through the world-wide-web, please send an email
  * to license@prestashop.com so we can send you a copy immediately.
  *
- * @author    PrestaShop SA and Contributors <contact@prestashop.com>
- * @copyright Since 2007 PrestaShop SA and Contributors
- * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License version 3.0
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade PrestaShop to newer
+ * versions in the future. If you wish to customize PrestaShop for your
+ * needs please refer to https://www.prestashop.com for more information.
+ *
+ * @author    PrestaShop SA <contact@prestashop.com>
+ * @copyright 2007-2020 PrestaShop SA and Contributors
+ * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0 (AFL-3.0)
+ * International Registered Trademark & Property of PrestaShop SA
  */
-
-declare(strict_types=1);
 
 namespace PrestaShop\HeaderStamp\Command;
 
-use PhpParser\Node\Stmt;
 use PhpParser\ParserFactory;
 use PrestaShop\HeaderStamp\LicenseHeader;
 use PrestaShop\HeaderStamp\Reporter;
@@ -53,33 +56,33 @@ class UpdateLicensesCommand extends Command
     /**
      * License content
      *
-     * @var string
+     * @param string $text
      */
     private $text;
 
     /**
      * License file path (not content)
      *
-     * @var string
+     * @param string $license
      */
     private $license;
 
     /**
-     * @var string|false Can be false because of realpath function
+     * @var string
      */
     private $targetDirectory;
 
     /**
      * List of extensions to update
      *
-     * @var array<int, string>
+     * @param array $extensions
      */
     private $extensions;
 
     /**
-     * List of folders and files to exclude from the search
+     * List of folders to exclude from the search
      *
-     * @var array<int, string>
+     * @param array $filters
      */
     private $filters;
 
@@ -105,12 +108,7 @@ class UpdateLicensesCommand extends Command
      */
     private $reporter;
 
-    /**
-     * @var string
-     */
-    private $discriminationString;
-
-    protected function configure(): void
+    protected function configure()
     {
         $this
             ->setName('prestashop:licenses:update')
@@ -132,8 +130,8 @@ class UpdateLicensesCommand extends Command
                 'exclude',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Comma-separated list of folders and files to exclude from the update',
-                implode(',', static::DEFAULT_FILTERS)
+                'Comma-separated list of folders to exclude from the update',
+                implode(',', self::DEFAULT_FILTERS)
             )
             ->addOption(
                 'extensions',
@@ -153,38 +151,24 @@ class UpdateLicensesCommand extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Dry-run mode does not modify files'
-            )
-            ->addOption(
-                'header-discrimination-string',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'Fix existing licenses only if they contain that string',
-                'prestashop'
             );
     }
 
-    protected function initialize(InputInterface $input, OutputInterface $output): void
+    protected function initialize(InputInterface $input, OutputInterface $output)
     {
         $this->extensions = explode(',', $input->getOption('extensions'));
         $this->filters = explode(',', $input->getOption('exclude'));
-
-        $licenseOption = $input->getOption('license');
-        $this->license = is_string($licenseOption) ? $licenseOption : '';
-
-        $targetOption = $input->getOption('target');
-        if (is_string($targetOption) && !empty($targetOption)) {
-            $this->targetDirectory = realpath($targetOption);
+        $this->license = $input->getOption('license');
+        if ($input->getOption('target')) {
+            $this->targetDirectory = realpath($input->getOption('target'));
         } else {
             $this->targetDirectory = getcwd();
         }
         $this->runAsDry = ($input->getOption('dry-run') === true);
         $this->displayReport = ($input->getOption('display-report') === true);
-
-        $discriminationOption = $input->getOption('header-discrimination-string');
-        $this->discriminationString = is_string($discriminationOption) ? $discriminationOption : '';
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->text = trim((new LicenseHeader($this->license))->getContent(), PHP_EOL);
 
@@ -211,7 +195,7 @@ class UpdateLicensesCommand extends Command
         return 0;
     }
 
-    private function findAndCheckExtension(InputInterface $input, OutputInterface $output, string $ext): void
+    private function findAndCheckExtension(InputInterface $input, OutputInterface $output, $ext)
     {
         if ($this->targetDirectory === false) {
             throw new \Exception('Could not get target directory. Check your permissions.');
@@ -274,7 +258,7 @@ class UpdateLicensesCommand extends Command
         $output->writeln('');
     }
 
-    private function addLicenseToFile(SplFileInfo $file, string $startDelimiter = '\/', string $endDelimiter = '\/'): void
+    private function addLicenseToFile($file, $startDelimiter = '\/', $endDelimiter = '\/')
     {
         $content = $file->getContents();
         $oldContent = $content;
@@ -295,7 +279,7 @@ class UpdateLicensesCommand extends Command
         if (count($matches)) {
             // Found - Replace it if prestashop one
             foreach ($matches as $match) {
-                if (stripos($match, $this->discriminationString) !== false) {
+                if (stripos($match, 'prestashop') !== false) {
                     $content = str_replace($match, $text, $content);
                 }
             }
@@ -307,11 +291,13 @@ class UpdateLicensesCommand extends Command
         if (!$this->runAsDry) {
             file_put_contents($this->targetDirectory . '/' . $file->getRelativePathname(), $content);
         }
-
         $this->reportOperationResult($content, $oldContent, $file->getFilename());
     }
 
-    private function addLicenseToNode(Stmt $node, SplFileInfo $file): void
+    /**
+     * @param \PhpParser\Node\Stmt $node
+     */
+    private function addLicenseToNode($node, SplFileInfo $file)
     {
         if (!$node->hasAttribute('comments')) {
             $needle = '<?php';
@@ -336,7 +322,7 @@ class UpdateLicensesCommand extends Command
         $comments = $node->getAttribute('comments');
         foreach ($comments as $comment) {
             if ($comment instanceof \PhpParser\Comment
-                && strpos($comment->getText(), $this->discriminationString) !== false) {
+                && strpos($comment->getText(), 'prestashop') !== false) {
                 $newContent = str_replace($comment->getText(), $this->text, $file->getContents());
 
                 if (!$this->runAsDry) {
@@ -351,30 +337,33 @@ class UpdateLicensesCommand extends Command
         }
     }
 
-    private function addLicenseToSmartyTemplate(SplFileInfo $file): void
+    private function addLicenseToSmartyTemplate(SplFileInfo $file)
     {
         $this->addLicenseToFile($file, '{', '}');
     }
 
-    private function addLicenseToTwigTemplate(SplFileInfo $file): void
+    private function addLicenseToTwigTemplate(SplFileInfo $file)
     {
         if (strrpos($file->getRelativePathName(), 'html.twig') !== false) {
             $this->addLicenseToFile($file, '{#', '#}');
         }
     }
 
-    private function addLicenseToHtmlFile(SplFileInfo $file): void
+    private function addLicenseToHtmlFile(SplFileInfo $file)
     {
         $this->addLicenseToFile($file, '<!--', '-->');
     }
 
-    private function addLicenseToJsonFile(SplFileInfo $file): bool
+    /**
+     * @return bool
+     */
+    private function addLicenseToJsonFile(SplFileInfo $file)
     {
         if (!in_array($file->getFilename(), ['composer.json', 'package.json'])) {
             return false;
         }
 
-        $content = json_decode($file->getContents(), true);
+        $content = (array) json_decode($file->getContents());
         $oldContent = $content;
         $content['author'] = 'PrestaShop';
         $content['license'] = (false !== strpos($this->license, 'afl')) ? 'AFL-3.0' : 'OSL-3.0';
@@ -388,28 +377,21 @@ class UpdateLicensesCommand extends Command
             $result = true;
         }
 
-        $newFileContent = (string) json_encode($content);
-        $oldFileContent = (string) json_encode($oldContent);
-
-        $this->reportOperationResult($newFileContent, $oldFileContent, $file->getFilename());
+        $this->reportOperationResult($content, $oldContent, $file->getFilename());
 
         return false !== $result;
     }
 
-    /**
-     * @var string
-     * @var string
-     */
-    private function reportOperationResult(string $newFileContent, string $oldFileContent, string $filename): void
+    private function reportOperationResult($newFileContent, $oldFileContent, $filename)
     {
-        if ($newFileContent !== $oldFileContent) {
+        if ($newFileContent != $oldFileContent) {
             $this->reporter->reportLicenseHasBeenFixed($filename);
         } else {
             $this->reporter->reportLicenseWasFine($filename);
         }
     }
 
-    private function printPrettyReport(InputInterface $input, OutputInterface $output): void
+    private function printPrettyReport(InputInterface $input, OutputInterface $output)
     {
         $style = new SymfonyStyle($input, $output);
         $style->section('Header Stamp Report');
@@ -420,13 +402,12 @@ class UpdateLicensesCommand extends Command
             if (empty($report[$section])) {
                 continue;
             }
-
             $style->text(ucfirst($section) . ':');
             $style->listing($report[$section]);
         }
     }
 
-    private function printDryRunPrettyReport(InputInterface $input, OutputInterface $output): void
+    private function printDryRunPrettyReport(InputInterface $input, OutputInterface $output)
     {
         $style = new SymfonyStyle($input, $output);
         $style->section('Header Stamp Dry Run Report');
@@ -436,7 +417,6 @@ class UpdateLicensesCommand extends Command
         if (empty($report['fixed'])) {
             return;
         }
-
         $style->text('Files with bad license headers:');
         $style->listing($report['fixed']);
     }
