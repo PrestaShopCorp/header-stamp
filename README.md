@@ -32,7 +32,7 @@ Available options:
 
 ```
 --license=LICENSE        License file to apply [default: "assets/osl3.txt"]
---exclude=EXCLUDE        Comma-separated list of folders and files to exclude from the update [default: ""]
+--exclude=EXCLUDE        Comma-separated list of folders to exclude from the update [default: ""]
 --extensions=EXTENSIONS  Comma-separated list of file extensions to update [default: "php,js,css,scss,tpl,html.twig,json,vue"]
 --target=PATH            Folder to work in [default: Current directory]
 --dry-run                Dry-run mode does not modify files
