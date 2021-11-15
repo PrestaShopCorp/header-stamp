@@ -166,7 +166,8 @@ class UpdateLicensesCommand extends Command
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
         $this->extensions = explode(',', $input->getOption('extensions'));
-        $this->filters = explode(',', $input->getOption('exclude'));
+        $this->filters = $input->getOption('exclude')
+            ? explode(',', $input->getOption('exclude')) : [];
 
         $licenseOption = $input->getOption('license');
         $this->license = is_string($licenseOption) ? $licenseOption : '';
@@ -222,7 +223,9 @@ class UpdateLicensesCommand extends Command
             ->files()
             ->name('*.' . $ext)
             ->in($this->targetDirectory)
-            ->exclude($this->filters);
+            ->exclude($this->filters)
+            ->notPath($this->filters);
+
         $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
 
         $output->writeln('Updating license in ' . strtoupper($ext) . ' files ...');
