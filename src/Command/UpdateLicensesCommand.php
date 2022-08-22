@@ -318,12 +318,19 @@ class UpdateLicensesCommand extends Command
     {
         if (!$node->hasAttribute('comments')) {
             $needle = '<?php';
-            $replace = "<?php\n" . $this->text . "\n";
+            $replace = "<?php\n" . $this->text;
             $haystack = $file->getContents();
 
             $pos = strpos($haystack, $needle);
             // Important, if the <?php is in the middle of the file, continue
             if ($pos === 0) {
+                // Check if an empty newline is present right after the <?php tag
+                // Append newline to replacement if missing
+                $checkNewline = substr($haystack, strlen($needle), 2) === "\n\n";
+                if (!$checkNewline) {
+                    $replace .= "\n";
+                }
+
                 $newstring = substr_replace($haystack, $replace, $pos, strlen($needle));
 
                 if (!$this->runAsDry) {
