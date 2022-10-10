@@ -5,4 +5,3 @@ parameters:
   level: 7
   inferPrivatePropertyTypeFromConstructor: true
   ignoreErrors:
-  - '#Parameter \#2 \$str of function explode expects string, array<string>\|bool\|string\|null given.#'
