@@ -48,7 +48,9 @@ class UpdateLicensesCommand extends Command
         'json',
         'vue',
     ];
-    const DEFAULT_FILTERS = [];
+    const DEFAULT_FOLDER_FILTERS = [];
+
+    const DEFAULT_FILE_FILTERS = [];
 
     /**
      * License content
@@ -77,11 +79,18 @@ class UpdateLicensesCommand extends Command
     private $extensions;
 
     /**
-     * List of folders and files to exclude from the search
+     * List of folders to exclude from the search
      *
      * @var array<int, string>
      */
-    private $filters;
+    private $folderFilters;
+
+    /**
+     * List of file names to exclude from the search
+     *
+     * @var array<int, string>
+     */
+    private $fileFilters;
 
     /**
      * dry-run feature flag
@@ -132,8 +141,15 @@ class UpdateLicensesCommand extends Command
                 'exclude',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Comma-separated list of folders and files to exclude from the update',
-                implode(',', static::DEFAULT_FILTERS)
+                'Comma-separated list of folders to exclude from the update',
+                implode(',', static::DEFAULT_FOLDER_FILTERS)
+            )
+            ->addOption(
+                'not-name',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Comma-separated list of file names to exclude from the update',
+                implode(',', static::DEFAULT_FILE_FILTERS)
             )
             ->addOption(
                 'extensions',
@@ -166,8 +182,10 @@ class UpdateLicensesCommand extends Command
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
         $this->extensions = explode(',', $input->getOption('extensions'));
-        $this->filters = $input->getOption('exclude')
+        $this->folderFilters = $input->getOption('exclude')
             ? explode(',', $input->getOption('exclude')) : [];
+        $this->fileFilters = $input->getOption('not-name')
+            ? explode(',', $input->getOption('not-name')) : [];
 
         $licenseOption = $input->getOption('license');
         $this->license = is_string($licenseOption) ? $licenseOption : '';
@@ -223,8 +241,9 @@ class UpdateLicensesCommand extends Command
             ->files()
             ->name('*.' . $ext)
             ->in($this->targetDirectory)
-            ->exclude($this->filters)
-            ->notPath($this->filters);
+            ->exclude($this->folderFilters)
+            ->notPath($this->folderFilters)
+            ->notName($this->fileFilters);
 
         $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
 
