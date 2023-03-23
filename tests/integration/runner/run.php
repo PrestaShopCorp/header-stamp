@@ -15,6 +15,7 @@ $modulesToTest = [
     'dashproducts',
     'fakemodule',
     'existing-headers-discrimination',
+    'smart-headers',
 ];
 $workspaceID = 100;
 $filesystem = new Filesystem();
