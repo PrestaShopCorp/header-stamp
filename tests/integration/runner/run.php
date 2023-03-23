@@ -35,6 +35,8 @@ foreach ($modulesToTest as $moduleName) {
     $commandParameters = ['command' => 'prestashop:licenses:update',
                           '--license' => __DIR__ . '/../../../assets/afl.txt',
                           '--target' => $workspaceFolderpath,
+                          '--not-name' => '*.min.js',
+                          '--exclude' => "ignoredFolder",
     ];
 
     if ('existing-headers-discrimination' === $moduleName) {
