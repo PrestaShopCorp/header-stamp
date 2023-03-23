@@ -36,7 +36,7 @@ foreach ($modulesToTest as $moduleName) {
                           '--license' => __DIR__ . '/../../../assets/afl.txt',
                           '--target' => $workspaceFolderpath,
                           '--not-name' => '*.min.js',
-                          '--exclude' => "ignoredFolder",
+                          '--exclude' => 'ignoredFolder',
     ];
 
     if ('existing-headers-discrimination' === $moduleName) {
