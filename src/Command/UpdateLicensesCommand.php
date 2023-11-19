@@ -301,7 +301,7 @@ class UpdateLicensesCommand extends Command
         $content = $file->getContents();
         $oldContent = $content;
         // Regular expression found thanks to Stephen Ostermiller's Blog. http://blog.ostermiller.org/find-comment
-        $regex = '%' . $startDelimiter . '\*([^*]|[\r\n]|(\*+([^*' . $endDelimiter . ']|[\r\n])))*\*+' . $endDelimiter . '%';
+        $regex = '%^' . $startDelimiter . '\*([^*]|[\r\n]|(\*+([^*' . $endDelimiter . ']|[\r\n])))*\*+' . $endDelimiter . '%';
         $matches = [];
         $text = $this->text;
         if ($startDelimiter != '\/') {
