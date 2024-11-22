@@ -58,7 +58,7 @@ foreach ($modulesToTest as $moduleName) {
     $check2 = $folderComparator->compareFolders($workspaceFolderpath, $expectedModuleFolderpath, '');
 
     // empty workspace
-    // $filesystem->remove($workspaceFolderpath);
+    $filesystem->remove($workspaceFolderpath);
 
     if (!empty($check)) {
         printErrorsList($moduleName, $check);
@@ -122,7 +122,6 @@ foreach ($modulesToValidate as $moduleName => $expectedResult) {
         } else {
             printErrorMessage(' - module ' . $moduleName . ' validation failed, some errors were expected to be found' . PHP_EOL);
         }
-
 
         exit(1);
     }
