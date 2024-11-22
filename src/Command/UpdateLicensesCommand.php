@@ -303,9 +303,10 @@ class UpdateLicensesCommand extends Command
     {
         $content = $file->getContents();
         $oldContent = $content;
-        // Regular expression found thanks to Stephen Ostermiller's Blog. http://blog.ostermiller.org/find-comment
-        $regex = '%^' . $startDelimiter . '\*([^*]|[\r\n]|(\*+([^*' . $endDelimiter . ']|[\r\n])))*\*+' . $endDelimiter . '%';
+        $regex = $this->getLicenseRegex($startDelimiter, $endDelimiter);
         $matches = [];
+
+        // Adapt the license header with expected delimiters
         $text = $this->text;
         if ($startDelimiter != '\/') {
             $startReplacer = $startReplacer ?: $startDelimiter;
@@ -339,6 +340,15 @@ class UpdateLicensesCommand extends Command
         }
 
         $this->reportOperationResult($content, $oldContent, $file->getFilename());
+    }
+
+    private function getLicenseRegex(string $startDelimiter, string $endDelimiter): string
+    {
+        // Regular expression found thanks to Stephen Ostermiller's Blog. http://blog.ostermiller.org/find-comment
+        // $regex = '%^' . $startDelimiter . '\*([^*]|[\r\n]|(\*+([^*' . $endDelimiter . ']|[\r\n])))*\*+' . $endDelimiter . '%';
+
+        // Initial regex was improved for special cases in Twig
+        return '%' . $startDelimiter . '\*([^*]|[\r\n]|(\*+((?!' . $endDelimiter . ')|[\r\n])))*\*+' . $endDelimiter . '%';
     }
 
     private function addLicenseToNode(Stmt $node, SplFileInfo $file): void
@@ -405,7 +415,14 @@ class UpdateLicensesCommand extends Command
     private function addLicenseToTwigTemplate(SplFileInfo $file): void
     {
         if (strrpos($file->getRelativePathName(), 'html.twig') !== false) {
-            $this->addLicenseToFile($file, '{#', '#}', '{##', null, '#');
+            // For a short moment v9 had some twig headers a bit wrongly written with extra spaces because of automatic
+            // changes made by the new linter This special cas aims at fixing those
+            $invalidLintedTwigRegexp = $this->getLicenseRegex('{# ', ' #}');
+            if (preg_match($invalidLintedTwigRegexp, $file->getContents())) {
+                $this->addLicenseToFile($file, '{# ', ' #}', '{##', '#}', '#');
+            } else {
+                $this->addLicenseToFile($file, '{#', '#}', '{##', null, '#');
+            }
         }
     }
 
