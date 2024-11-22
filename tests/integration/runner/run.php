@@ -30,6 +30,7 @@ foreach ($modulesToTest as $moduleName) {
     $workspaceFolderpath = __DIR__ . '/../workspace/' . $workspaceID;
 
     // copy module into workspace
+    $filesystem->remove($workspaceFolderpath);
     $filesystem->mirror($moduleFolderpath, $workspaceFolderpath);
 
     // run UpdateLicensesCommand on workspace
@@ -56,7 +57,7 @@ foreach ($modulesToTest as $moduleName) {
     $check2 = $folderComparator->compareFolders($workspaceFolderpath, $expectedModuleFolderpath, '');
 
     // empty workspace
-    $filesystem->remove($workspaceFolderpath);
+    // $filesystem->remove($workspaceFolderpath);
 
     if (!empty($check)) {
         printErrorsList($moduleName, $check);

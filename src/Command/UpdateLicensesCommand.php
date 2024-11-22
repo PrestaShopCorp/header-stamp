@@ -339,28 +339,7 @@ class UpdateLicensesCommand extends Command
     private function addLicenseToNode(Stmt $node, SplFileInfo $file): void
     {
         if (!$node->hasAttribute('comments')) {
-            $needle = '<?php';
-            $replace = "<?php\n" . $this->text;
-            $haystack = $file->getContents();
-
-            $pos = strpos($haystack, $needle);
-            // Important, if the <?php is in the middle of the file, continue
-            if ($pos === 0) {
-                // Check if an empty newline is present right after the <?php tag
-                // Append newline to replacement if missing
-                $checkNewline = substr($haystack, strlen($needle), 2) === "\n\n";
-                if (!$checkNewline) {
-                    $replace .= "\n";
-                }
-
-                $newstring = substr_replace($haystack, $replace, $pos, strlen($needle));
-
-                if (!$this->runAsDry) {
-                    file_put_contents($this->targetDirectory . '/' . $file->getRelativePathname(), $newstring);
-                }
-
-                $this->reportOperationResult($newstring, $haystack, $file->getFilename());
-            }
+            $this->prependInPHPFile($file);
 
             return;
         }
@@ -379,7 +358,37 @@ class UpdateLicensesCommand extends Command
                 }
 
                 $this->reportOperationResult($newContent, $file->getContents(), $file->getFilename());
+                return;
             }
+        }
+
+        // No comment was replaced so we prepend the license
+        $this->prependInPHPFile($file);
+    }
+
+    private function prependInPHPFile(SplFileInfo $file): void
+    {
+        $needle = '<?php';
+        $replace = "<?php\n" . $this->text;
+        $haystack = $file->getContents();
+
+        $pos = strpos($haystack, $needle);
+        // Important, if the <?php is in the middle of the file, continue
+        if ($pos === 0) {
+            // Check if an empty newline is present right after the <?php tag
+            // Append newline to replacement if missing
+            $checkNewline = substr($haystack, strlen($needle), 2) === "\n\n";
+            if (!$checkNewline) {
+                $replace .= "\n";
+            }
+
+            $newstring = substr_replace($haystack, $replace, $pos, strlen($needle));
+
+            if (!$this->runAsDry) {
+                file_put_contents($this->targetDirectory . '/' . $file->getRelativePathname(), $newstring);
+            }
+
+            $this->reportOperationResult($newstring, $haystack, $file->getFilename());
         }
     }
 
