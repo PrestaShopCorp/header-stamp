@@ -419,9 +419,9 @@ class UpdateLicensesCommand extends Command
             // changes made by the new linter This special cas aims at fixing those
             $invalidLintedTwigRegexp = $this->getLicenseRegex('{# ', ' #}');
             if (preg_match($invalidLintedTwigRegexp, $file->getContents())) {
-                $this->addLicenseToFile($file, '{# ', ' #}', '{##', '#}', '#');
+                $this->addLicenseToFile($file, '{# ', ' #}', '{#', '#}', '#');
             } else {
-                $this->addLicenseToFile($file, '{#', '#}', '{##', null, '#');
+                $this->addLicenseToFile($file, '{#', '#}', null, null, '#');
             }
         }
     }
