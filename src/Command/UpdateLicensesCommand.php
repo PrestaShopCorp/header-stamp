@@ -399,10 +399,10 @@ class UpdateLicensesCommand extends Command
         $this->addLicenseToFile($file, '<!--', '-->');
     }
 
-    private function addLicenseToJsonFile(SplFileInfo $file): bool
+    private function addLicenseToJsonFile(SplFileInfo $file): void
     {
         if (!in_array($file->getFilename(), ['composer.json', 'package.json'])) {
-            return false;
+            return;
         }
 
         $content = json_decode($file->getContents(), true);
@@ -430,17 +430,13 @@ class UpdateLicensesCommand extends Command
         }
 
         if (!$this->runAsDry) {
-            $result = file_put_contents(
+            file_put_contents(
                 $this->targetDirectory . '/' . $file->getRelativePathname(),
                 $encodedContent
             );
-        } else {
-            $result = true;
         }
 
-        $this->reportOperationResult($encodedContent, json_encode($oldContent), $file->getFilename());
-
-        return false !== $result;
+        $this->reportOperationResult($encodedContent, $file->getContents(), $file->getFilename());
     }
 
     /**
