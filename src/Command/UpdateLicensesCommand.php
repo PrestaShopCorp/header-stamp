@@ -446,10 +446,6 @@ class UpdateLicensesCommand extends Command
         $this->reportOperationResult($encodedContent, $file->getContents(), $file->getFilename());
     }
 
-    /**
-     * @var string
-     * @var string
-     */
     private function reportOperationResult(string $newFileContent, string $oldFileContent, string $filename): void
     {
         if ($newFileContent !== $oldFileContent) {
