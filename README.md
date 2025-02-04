@@ -46,7 +46,7 @@ Install dependencies with composer. Two CI tools are configured for this project
 ```
 composer install
 php vendor/bin/php-cs-fixer fix --no-interaction --dry-run --diff
-php phpstan analyse tests/phpstan/phpstan.neon
+php vendor/bin/phpstan analyse tests/phpstan/phpstan.neon
 ```
 
 Before submitting changes to the projects, tests can be run with:
