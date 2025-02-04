@@ -41,6 +41,7 @@ class UpdateLicensesCommand extends Command
     const DEFAULT_EXTENSIONS = [
         'php',
         'js',
+        'ts',
         'css',
         'scss',
         'tpl',
