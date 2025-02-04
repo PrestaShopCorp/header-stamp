@@ -3,12 +3,6 @@
     "description": "PrestaShop module gsitemap",
     "homepage": "https://github.com/PrestaShop/gsitemap",
     "license": "AFL-3.0",
-    "authors": [
-        {
-            "name": "PrestaShop SA",
-            "email": "contact@prestashop.com"
-        }
-    ],
     "require": {
         "php": ">=5.6.0"
     },
@@ -16,5 +10,10 @@
         "preferred-install": "dist"
     },
     "type": "prestashop-module",
-    "author": "PrestaShop"
+    "authors": [
+        {
+            "name": "PrestaShop SA",
+            "email": "contact@prestashop.com"
+        }
+    ]
 }

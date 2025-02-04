@@ -32,7 +32,6 @@ class FolderComparator
         'autoload_static.php',
         'autoload_real.php',
         'ClassLoader.php',
-        'composer.json',
     ];
 
     /**

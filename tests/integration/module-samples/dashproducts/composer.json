@@ -15,6 +15,5 @@
     "config": {
         "preferred-install": "dist"
     },
-    "type": "prestashop-module",
-    "author": "PrestaShop"
+    "type": "prestashop-module"
 }
