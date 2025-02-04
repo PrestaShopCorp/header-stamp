@@ -267,6 +267,7 @@ class UpdateLicensesCommand extends Command
 
                     break;
                 case 'js':
+                case 'ts':
                 case 'css':
                 case 'scss':
                     $this->addLicenseToFile($file);
