@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace PrestaShop\HeaderStamp\Command;
 
+use Exception;
 use PhpParser\Node\Stmt;
 use PhpParser\ParserFactory;
 use PrestaShop\HeaderStamp\LicenseHeader;
@@ -399,6 +400,9 @@ class UpdateLicensesCommand extends Command
         $this->addLicenseToFile($file, '<!--', '-->');
     }
 
+    /**
+     * @throws Exception
+     */
     private function addLicenseToJsonFile(SplFileInfo $file): void
     {
         if (!in_array($file->getFilename(), ['composer.json', 'package.json'])) {
@@ -406,7 +410,6 @@ class UpdateLicensesCommand extends Command
         }
 
         $content = json_decode($file->getContents(), true);
-        $oldContent = $content;
 
         $authorDetails = [
             'name' => 'PrestaShop SA',
@@ -423,6 +426,10 @@ class UpdateLicensesCommand extends Command
         $content['license'] = (false !== strpos($this->license, 'afl')) ? 'AFL-3.0' : 'OSL-3.0';
 
         $encodedContent = json_encode($content, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+
+        if (!$encodedContent) {
+            throw new Exception('File can not be encoded to JSON format');
+        }
 
         // add blank line in end of file if not exist
         if (substr($encodedContent, -1) !== "\n") {
