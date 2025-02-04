@@ -407,22 +407,38 @@ class UpdateLicensesCommand extends Command
 
         $content = json_decode($file->getContents(), true);
         $oldContent = $content;
-        $content['author'] = 'PrestaShop';
+
+        $authorDetails = [
+            'name' => 'PrestaShop SA',
+            'email' => 'contact@prestashop.com',
+        ];
+
+        // update author information depending of file
+        if ('composer.json' === $file->getFilename()) {
+            $content['authors'] = [$authorDetails];
+        } else { // package.json
+            $content['author'] = $authorDetails;
+        }
+
         $content['license'] = (false !== strpos($this->license, 'afl')) ? 'AFL-3.0' : 'OSL-3.0';
+
+        $encodedContent = json_encode($content, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+
+        // add blank line in end of file if not exist
+        if (substr($encodedContent, -1) !== "\n") {
+            $encodedContent .= "\n";
+        }
 
         if (!$this->runAsDry) {
             $result = file_put_contents(
                 $this->targetDirectory . '/' . $file->getRelativePathname(),
-                json_encode($content, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+                $encodedContent
             );
         } else {
             $result = true;
         }
 
-        $newFileContent = (string) json_encode($content);
-        $oldFileContent = (string) json_encode($oldContent);
-
-        $this->reportOperationResult($newFileContent, $oldFileContent, $file->getFilename());
+        $this->reportOperationResult($encodedContent, json_encode($oldContent), $file->getFilename());
 
         return false !== $result;
     }
