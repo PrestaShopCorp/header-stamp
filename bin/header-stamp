@@ -45,5 +45,6 @@ $command = new UpdateLicensesCommand();
 
 $application->add($command);
 
+// @phpstan-ignore argument.type (Name is set in the command)
 $application->setDefaultCommand($command->getName());
 $application->run();

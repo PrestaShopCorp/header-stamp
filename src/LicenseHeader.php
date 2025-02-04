@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace PrestaShop\HeaderStamp;
 
+use Exception;
+
 /**
  * Class responsible of loading license file in memory and returning its content
  */
@@ -52,7 +54,7 @@ class LicenseHeader
     public function getContent(): string
     {
         if (null === $this->content) {
-            $this->loadFile();
+            $this->content = $this->loadFile();
         }
 
         return $this->content;
@@ -61,7 +63,7 @@ class LicenseHeader
     /**
      * Checks the file and loads its content in memory
      */
-    private function loadFile(): void
+    private function loadFile(): string
     {
         if (!\file_exists($this->filePath)) {
             // If the file is not found, we might have a relative path
@@ -84,9 +86,9 @@ class LicenseHeader
 
         $content = \file_get_contents($this->filePath);
         if ($content === false) {
-            return;
+            throw new Exception('Cannot load license file ' . $this->filePath . '.');
         }
 
-        $this->content = $content;
+        return $content;
     }
 }
