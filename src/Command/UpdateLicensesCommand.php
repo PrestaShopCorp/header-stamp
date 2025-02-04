@@ -298,19 +298,25 @@ class UpdateLicensesCommand extends Command
         $output->writeln('');
     }
 
-    private function addLicenseToFile(SplFileInfo $file, string $startDelimiter = '\/', string $endDelimiter = '\/'): void
+    private function addLicenseToFile(SplFileInfo $file, string $startDelimiter = '\/', string $endDelimiter = '\/', string $startReplacer = null, string $endReplacer = null, ?string $commentDelimiter = null): void
     {
         $content = $file->getContents();
         $oldContent = $content;
-        // Regular expression found thanks to Stephen Ostermiller's Blog. http://blog.ostermiller.org/find-comment
-        $regex = '%' . $startDelimiter . '\*([^*]|[\r\n]|(\*+([^*' . $endDelimiter . ']|[\r\n])))*\*+' . $endDelimiter . '%';
+        $regex = $this->getLicenseRegex($startDelimiter, $endDelimiter);
         $matches = [];
+
+        // Adapt the license header with expected delimiters
         $text = $this->text;
         if ($startDelimiter != '\/') {
-            $text = $startDelimiter . ltrim($text, '/');
+            $startReplacer = $startReplacer ?: $startDelimiter;
+            $text = $startReplacer . ltrim($text, '/**');
         }
         if ($endDelimiter != '\/') {
-            $text = rtrim($text, '/') . $endDelimiter;
+            $endReplacer = $endReplacer ?: $endDelimiter;
+            $text = rtrim($text, '*/') . $endReplacer;
+        }
+        if (!empty($commentDelimiter)) {
+            $text = preg_replace('% \*%', ' ' . $commentDelimiter, $text);
         }
 
         // Try to find an existing license
@@ -335,31 +341,19 @@ class UpdateLicensesCommand extends Command
         $this->reportOperationResult($content, $oldContent, $file->getFilename());
     }
 
+    private function getLicenseRegex(string $startDelimiter, string $endDelimiter): string
+    {
+        // Regular expression found thanks to Stephen Ostermiller's Blog. http://blog.ostermiller.org/find-comment
+        // $regex = '%' . $startDelimiter . '\*([^*]|[\r\n]|(\*+([^*' . $endDelimiter . ']|[\r\n])))*\*+' . $endDelimiter . '%';
+
+        // Initial regex was improved for special cases in Twig
+        return '%' . $startDelimiter . '\*([^*]|[\r\n]|(\*+((?!' . $endDelimiter . ')|[\r\n])))*\*+' . $endDelimiter . '%';
+    }
+
     private function addLicenseToNode(Stmt $node, SplFileInfo $file): void
     {
         if (!$node->hasAttribute('comments')) {
-            $needle = '<?php';
-            $replace = "<?php\n" . $this->text;
-            $haystack = $file->getContents();
-
-            $pos = strpos($haystack, $needle);
-            // Important, if the <?php is in the middle of the file, continue
-            if ($pos === 0) {
-                // Check if an empty newline is present right after the <?php tag
-                // Append newline to replacement if missing
-                $checkNewline = substr($haystack, strlen($needle), 2) === "\n\n";
-                if (!$checkNewline) {
-                    $replace .= "\n";
-                }
-
-                $newstring = substr_replace($haystack, $replace, $pos, strlen($needle));
-
-                if (!$this->runAsDry) {
-                    file_put_contents($this->targetDirectory . '/' . $file->getRelativePathname(), $newstring);
-                }
-
-                $this->reportOperationResult($newstring, $haystack, $file->getFilename());
-            }
+            $this->prependInPHPFile($file);
 
             return;
         }
@@ -378,19 +372,57 @@ class UpdateLicensesCommand extends Command
                 }
 
                 $this->reportOperationResult($newContent, $file->getContents(), $file->getFilename());
+
+                return;
             }
+        }
+
+        // No comment was replaced so we prepend the license
+        $this->prependInPHPFile($file);
+    }
+
+    private function prependInPHPFile(SplFileInfo $file): void
+    {
+        $needle = '<?php';
+        $replace = "<?php\n" . $this->text;
+        $haystack = $file->getContents();
+
+        $pos = strpos($haystack, $needle);
+        // Important, if the <?php is in the middle of the file, continue
+        if ($pos === 0) {
+            // Check if an empty newline is present right after the <?php tag
+            // Append newline to replacement if missing
+            $checkNewline = substr($haystack, strlen($needle), 2) === "\n\n";
+            if (!$checkNewline) {
+                $replace .= "\n";
+            }
+
+            $newstring = substr_replace($haystack, $replace, $pos, strlen($needle));
+
+            if (!$this->runAsDry) {
+                file_put_contents($this->targetDirectory . '/' . $file->getRelativePathname(), $newstring);
+            }
+
+            $this->reportOperationResult($newstring, $haystack, $file->getFilename());
         }
     }
 
     private function addLicenseToSmartyTemplate(SplFileInfo $file): void
     {
-        $this->addLicenseToFile($file, '{', '}');
+        $this->addLicenseToFile($file, '{', '}', '{**', '*}');
     }
 
     private function addLicenseToTwigTemplate(SplFileInfo $file): void
     {
         if (strrpos($file->getRelativePathName(), 'html.twig') !== false) {
-            $this->addLicenseToFile($file, '{#', '#}');
+            // For a short moment v9 had some twig headers a bit wrongly written with extra spaces because of automatic
+            // changes made by the new linter This special cas aims at fixing those
+            $invalidLintedTwigRegexp = $this->getLicenseRegex('{# ', ' #}');
+            if (preg_match($invalidLintedTwigRegexp, $file->getContents())) {
+                $this->addLicenseToFile($file, '{# ', ' #}', '{#', '#}', '#');
+            } else {
+                $this->addLicenseToFile($file, '{#', '#}', null, null, '#');
+            }
         }
     }
 
