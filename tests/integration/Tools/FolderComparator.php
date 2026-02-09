@@ -18,6 +18,8 @@
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License version 3.0
  */
 
+namespace Tests\Integration\Tools;
+
 /**
  * @see https://github.com/sureshdotariya/folder-compare/
  */
@@ -37,11 +39,11 @@ class FolderComparator
     /**
      * @param $folderA
      * @param $folderB
-     * @param $reference
+     * @param $basePath
      *
      * @return array list of items that differ
      */
-    public function compareFolders($folderA, $folderB, $reference)
+    public function compareFolders($folderA, $folderB, $basePath = '')
     {
         $itemsDiffer = [];
         $handle = opendir($folderA);
@@ -53,7 +55,7 @@ class FolderComparator
 
             $fileA = $folderA . DIRECTORY_SEPARATOR . $file;
             $fileB = $folderB . DIRECTORY_SEPARATOR . $file;
-            $fullPath = $reference . DIRECTORY_SEPARATOR . $file;
+            $fullPath = $basePath . DIRECTORY_SEPARATOR . $file;
 
             if (is_file($fileA)) {
                 if (!file_exists($fileB)) {

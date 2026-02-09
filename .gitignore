@@ -1,3 +1,4 @@
 vendor/
 .idea
-tests/integration/workspace/*
+tests/Resources/workspace/*
+tests/Integration/.phpunit.result.cache

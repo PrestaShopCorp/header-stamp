@@ -1,0 +1,9 @@
+<phpunit
+    bootstrap="bootstrap.php"
+    processIsolation="false">
+  <testsuites>
+    <testsuite name="Integration">
+      <directory>.</directory>
+    </testsuite>
+  </testsuites>
+</phpunit>

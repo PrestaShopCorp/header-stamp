@@ -31,9 +31,20 @@
             "PrestaShop\\HeaderStamp\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\Integration\\": "tests/Integration"
+        }
+    },
     "author": "PrestaShop",
     "require-dev": {
         "prestashop/php-dev-tools": "1.*",
-        "phpstan/phpstan": "^1.12"
+        "phpstan/phpstan": "^1.12",
+        "phpunit/phpunit": "^8.5"
+    },
+    "scripts": {
+        "integration-tests": [
+            "@php -d date.timezone=UTC ./vendor/phpunit/phpunit/phpunit -c tests/Integration/phpunit.xml"
+        ]
     }
 }
