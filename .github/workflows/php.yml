@@ -51,6 +51,7 @@ jobs:
         with:
           fetch-depth: 0
       - run: composer install --prefer-dist
+      - run: composer unit-tests
       - run: composer integration-tests
 
   phpstan:

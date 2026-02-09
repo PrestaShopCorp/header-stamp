@@ -33,7 +33,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\Integration\\": "tests/Integration"
+            "Tests\\Integration\\": "tests/Integration",
+            "Tests\\Unit\\": "tests/Unit"
         }
     },
     "author": "PrestaShop",
@@ -45,6 +46,9 @@
     "scripts": {
         "integration-tests": [
             "@php -d date.timezone=UTC ./vendor/phpunit/phpunit/phpunit -c tests/Integration/phpunit.xml"
+        ],
+        "unit-tests": [
+            "@php -d date.timezone=UTC ./vendor/phpunit/phpunit/phpunit -c tests/Unit/phpunit.xml"
         ]
     }
 }

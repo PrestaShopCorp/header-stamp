@@ -36,6 +36,10 @@ class LicenseHeader
      */
     private $content;
 
+    private $contentByTypes;
+
+    private $regexByTypes;
+
     /**
      * Path to the file
      *
@@ -46,6 +50,8 @@ class LicenseHeader
     public function __construct(string $filePath)
     {
         $this->filePath = $filePath;
+        $this->contentByTypes = [];
+        $this->regexByTypes = [];
     }
 
     /**
@@ -58,6 +64,96 @@ class LicenseHeader
         }
 
         return $this->content;
+    }
+
+    public function getContentByType(string $type): string
+    {
+        if (!isset($this->contentByTypes[$type])) {
+            switch ($type) {
+                case 'vue':
+                case 'html':
+                    $this->contentByTypes[$type] = $this->rewriteContent($this->getContent(), '<!--*', '*-->');
+                    break;
+                case 'tpl':
+                    $this->contentByTypes[$type] = $this->rewriteContent($this->getContent(), '{**', '*}');
+                    break;
+                case 'twig':
+                    $this->contentByTypes[$type] = $this->rewriteContent($this->getContent(), '{#', '#}', ' #');
+                    break;
+                case 'php':
+                case 'js':
+                case 'ts':
+                case 'css':
+                case 'scss':
+                    $this->contentByTypes[$type] = $this->rewriteContent($this->getContent(), '/**', '*/');
+                    break;
+                default:
+                    throw new \RuntimeException('Unknown type ' . $type);
+            }
+        }
+
+        return $this->contentByTypes[$type];
+    }
+
+    public function getRegexByType(string $type): string
+    {
+        if (!isset($this->regexByTypes[$type])) {
+            switch ($type) {
+                case 'vue':
+                case 'html':
+                    $this->regexByTypes[$type] = $this->getLicenseRegex('<!--', '-->');
+                    break;
+                case 'tpl':
+                    $this->regexByTypes[$type] = $this->getLicenseRegex('{', '}');
+                    break;
+                case 'twig':
+                    $this->regexByTypes[$type] = $this->getTwigLicenseRegex('{#', '#}', '#');
+                    break;
+                case 'php':
+                case 'js':
+                case 'ts':
+                case 'css':
+                case 'scss':
+                    $this->regexByTypes[$type] = $this->getLicenseRegex('\/', '\/');
+                    break;
+                default:
+                    throw new \RuntimeException('Unknown type ' . $type);
+            }
+        }
+
+        return $this->regexByTypes[$type];
+    }
+
+    public function getTwigLicenseRegex(string $startDelimiter, string $endDelimiter, string $commentDelimiter = "*"): string
+    {
+        $startDelimiter = addcslashes($startDelimiter, '*#{}');
+        $endDelimiter = addcslashes($endDelimiter, '*#{}');
+        $commentDelimiter = addcslashes($commentDelimiter, '*#{}');
+
+        $regex = '%^' . $startDelimiter . '([^' . $commentDelimiter . ']|[\r\n]|(' . $commentDelimiter . '+((?!\})|[\r\n])))*+' . $endDelimiter . '%';
+
+        return $regex;
+    }
+
+    private function getLicenseRegex(string $startDelimiter, string $endDelimiter): string
+    {
+        // Regular expression found thanks to Stephen Ostermiller's Blog. http://blog.ostermiller.org/find-comment
+        // $regex = '%^' . $startDelimiter . '\*([^*]|[\r\n]|(\*+([^*' . $endDelimiter . ']|[\r\n])))*\*+' . $endDelimiter . '%';
+        // Initial regex was improved for special cases in Twig
+        return '%^' . $startDelimiter . '\*([^*]|[\r\n]|(\*+((?!' . $endDelimiter . ')|[\r\n])))*\*+' . $endDelimiter . '%';
+    }
+
+    private function rewriteContent(string $text, string $startDelimiter, string $endDelimiter, ?string $commentDelimiter = null): string
+    {
+        // Adapt the license header with expected delimiters
+        $text = rtrim($text, PHP_EOL);
+        $text = $startDelimiter . ltrim($text, '/**');
+        $text = rtrim($text, '*/') . $endDelimiter;
+        if (null !== $commentDelimiter) {
+            $text = preg_replace('% \*%', $commentDelimiter, $text);
+        }
+
+        return trim($text, PHP_EOL);
     }
 
     /**
