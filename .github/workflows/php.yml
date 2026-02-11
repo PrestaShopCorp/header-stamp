@@ -69,3 +69,18 @@ jobs:
       - run: composer install --prefer-dist
       - name: Install & run PHPStan
         run: ./vendor/bin/phpstan analyse --configuration=tests/phpstan/phpstan.neon
+
+  header-stamp:
+    name: Header Stamp (self check)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, intl, gd, xml, dom, json, fileinfo, curl, zip, iconv
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 0
+      - run: composer install --prefer-dist
+      - run: ./bin/header-stamp --dry-run
