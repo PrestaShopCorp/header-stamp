@@ -53,8 +53,8 @@ class UpdateLicensesCommand extends Command
     ];
     const CONFIG_PARAMETERS_MAPPING = [
         'extensions' => 'extensions',
-        'folderFilters' => 'exclude',
-        'fileFilters' => 'not-name',
+        'excludedFiles' => 'exclude',
+        'notNamePatterns' => 'not-name',
         'license' => 'license',
         'targetDirectory' => 'target-directory',
         'runAsDry' => 'dry-run',
@@ -94,18 +94,18 @@ class UpdateLicensesCommand extends Command
     private $extensions;
 
     /**
-     * List of folders to exclude from the search
+     * List of folders/files to exclude from the search
      *
      * @var array<int, string>
      */
-    private $folderFilters;
+    private $excludedFiles;
 
     /**
      * List of file names to exclude from the search
      *
      * @var array<int, string>
      */
-    private $fileFilters;
+    private $notNamePatterns;
 
     /**
      * dry-run feature flag
@@ -156,14 +156,14 @@ class UpdateLicensesCommand extends Command
                 'exclude',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Comma-separated list of folders to exclude from the update',
+                'Comma-separated list of folders/files to exclude from the update',
                 implode(',', static::DEFAULT_FOLDER_FILTERS)
             )
             ->addOption(
                 'not-name',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Comma-separated list of file names to exclude from the update',
+                'Comma-separated list of file patterns to exclude from the update (ex: *.min.js)',
                 implode(',', static::DEFAULT_FILE_FILTERS)
             )
             ->addOption(
@@ -217,8 +217,8 @@ class UpdateLicensesCommand extends Command
 
         // Now apply the config to the command fields
         $this->extensions = $mergedConfig['extensions'];
-        $this->folderFilters = $mergedConfig['folderFilters'];
-        $this->fileFilters = $mergedConfig['fileFilters'];
+        $this->excludedFiles = $mergedConfig['excludedFiles'];
+        $this->notNamePatterns = $mergedConfig['notNamePatterns'];
         $this->license = $mergedConfig['license'];
         $this->targetDirectory = $mergedConfig['targetDirectory'];
         $this->runAsDry = $mergedConfig['runAsDry'];
@@ -237,14 +237,14 @@ class UpdateLicensesCommand extends Command
      * Returns default configuration as per defined in the command options,
      * using their default value or fallback if they are not specified.
      *
-     * @return array{extensions: string[], folderFilters: string[], fileFilters: string[], license: string, targetDirectory: string, runAsDry: bool, displayReport: bool, discriminationString: string}
+     * @return array{extensions: string[], excludedFiles: string[], notNamePatterns: string[], license: string, targetDirectory: string, runAsDry: bool, displayReport: bool, discriminationString: string}
      */
     protected function getDefaultConfig(InputInterface $input): array
     {
         $defaultConfig = [
             'extensions' => explode(',', $input->getOption('extensions')),
-            'folderFilters' => $input->getOption('exclude') ? explode(',', $input->getOption('exclude')) : [],
-            'fileFilters' => $input->getOption('not-name') ? explode(',', $input->getOption('not-name')) : [],
+            'excludedFiles' => $input->getOption('exclude') ? explode(',', $input->getOption('exclude')) : [],
+            'notNamePatterns' => $input->getOption('not-name') ? explode(',', $input->getOption('not-name')) : [],
             'license' => $input->getOption('license'),
             'targetDirectory' => $input->getOption('target') ?: '',
             'runAsDry' => $input->getOption('dry-run') === true,
@@ -259,7 +259,7 @@ class UpdateLicensesCommand extends Command
     /**
      * Return the config only based on explicitly specified parameters in the CLI command.
      *
-     * @return array{extensions?: string[], folderFilters?: string[], fileFilters?: string[], license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string}
+     * @return array{extensions?: string[], excludedFiles?: string[], notNamePatterns?: string[], license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string}
      */
     protected function getTokenConfig(InputInterface $input): array
     {
@@ -281,9 +281,9 @@ class UpdateLicensesCommand extends Command
      * can use the same keys as the CLI command parameters OR the config ones (they
      * even have a higher priority).
      *
-     * Ex: fileFilters will be preferred over not-name
+     * Ex: notNamePatterns will be preferred over not-name
      *
-     * @return array{extensions?: string[], folderFilters?: string[], fileFilters?: string[], license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string}
+     * @return array{extensions?: string[], excludedFiles?: string[], notNamePatterns?: string[], license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string}
      */
     protected function getConfigFromFile(InputInterface $input): array
     {
@@ -314,7 +314,7 @@ class UpdateLicensesCommand extends Command
     /**
      * Some config fields need to be adapted, this method transforms all three configs the same way
      *
-     * @param array{extensions?: string[], folderFilters?: string[], fileFilters?: string[], license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string} $config
+     * @param array{extensions?: string[], excludedFiles?: string[], notNamePatterns?: string[], license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string} $config
      */
     protected function adaptConfig(array &$config): void
     {
@@ -369,9 +369,10 @@ class UpdateLicensesCommand extends Command
             ->files()
             ->name('*.' . $ext)
             ->in($this->targetDirectory)
-            ->exclude($this->folderFilters)
-            ->notPath($this->folderFilters)
-            ->notName($this->fileFilters);
+            ->exclude($this->excludedFiles)
+            ->notPath($this->excludedFiles)
+            ->notName($this->notNamePatterns)
+        ;
 
         $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
 

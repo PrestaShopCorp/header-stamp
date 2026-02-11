@@ -1,5 +1,5 @@
 license: assets/afl.txt
-folderFilters:
+excludedFiles:
   - tests/Resources
   - vendor
   - node_modules
