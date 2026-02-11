@@ -55,11 +55,9 @@ class UpdateLicensesCommand extends Command
     const DEFAULT_FILE_FILTERS = [];
 
     /**
-     * License content
-     *
-     * @var string
+     * @var LicenseHeader
      */
-    private $text;
+    private $licenseHeader;
 
     /**
      * License file path (not content)
@@ -177,7 +175,7 @@ class UpdateLicensesCommand extends Command
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'Fix existing licenses only if they contain that string',
-                'prestashop'
+                'NOTICE OF LICENSE'
             );
     }
 
@@ -207,8 +205,7 @@ class UpdateLicensesCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->text = trim((new LicenseHeader($this->license))->getContent(), PHP_EOL);
-
+        $this->licenseHeader = new LicenseHeader($this->license);
         $this->reporter = new Reporter();
 
         foreach ($this->extensions as $extension) {
@@ -272,11 +269,10 @@ class UpdateLicensesCommand extends Command
                 case 'ts':
                 case 'css':
                 case 'scss':
-                    $this->addLicenseToFile($file);
-
-                    break;
+                case 'vue':
+                case 'html':
                 case 'tpl':
-                    $this->addLicenseToSmartyTemplate($file);
+                    $this->addLicenseToFile($file, $this->licenseHeader->getRegexByType($file->getExtension()));
 
                     break;
                 case 'twig':
@@ -287,10 +283,6 @@ class UpdateLicensesCommand extends Command
                     $this->addLicenseToJsonFile($file);
 
                     break;
-                case 'vue':
-                    $this->addLicenseToHtmlFile($file);
-
-                    break;
             }
             $progress->advance();
         }
@@ -299,38 +291,27 @@ class UpdateLicensesCommand extends Command
         $output->writeln('');
     }
 
-    private function addLicenseToFile(SplFileInfo $file, string $startDelimiter = '\/', string $endDelimiter = '\/', string $startReplacer = null, string $endReplacer = null, ?string $commentDelimiter = null): void
+    private function addLicenseToFile(SplFileInfo $file, string $regex): void
     {
         $content = $file->getContents();
         $oldContent = $content;
-        $regex = $this->getLicenseRegex($startDelimiter, $endDelimiter);
         $matches = [];
 
-        // Adapt the license header with expected delimiters
-        $text = $this->text;
-        if ($startDelimiter != '\/') {
-            $startReplacer = $startReplacer ?: $startDelimiter;
-            $text = $startReplacer . ltrim($text, '/**');
-        }
-        if ($endDelimiter != '\/') {
-            $endReplacer = $endReplacer ?: $endDelimiter;
-            $text = rtrim($text, '*/') . $endReplacer;
-        }
-        if (!empty($commentDelimiter)) {
-            $text = preg_replace('% \*%', ' ' . $commentDelimiter, $text);
-        }
-
+        $text = $this->licenseHeader->getContentByType($file->getExtension());
         // Try to find an existing license
         preg_match($regex, $content, $matches);
 
+        $foundLicenseComment = false;
         if (count($matches)) {
             // Found - Replace it if prestashop one
             foreach ($matches as $match) {
                 if (stripos($match, $this->discriminationString) !== false) {
+                    $foundLicenseComment = true;
                     $content = str_replace($match, $text, $content);
                 }
             }
-        } else {
+        }
+        if (!$foundLicenseComment) {
             // Not found - Add it at the beginning of the file
             $content = $text . "\n" . $content;
         }
@@ -339,16 +320,7 @@ class UpdateLicensesCommand extends Command
             file_put_contents($this->targetDirectory . '/' . $file->getRelativePathname(), $content);
         }
 
-        $this->reportOperationResult($content, $oldContent, $file->getFilename());
-    }
-
-    private function getLicenseRegex(string $startDelimiter, string $endDelimiter): string
-    {
-        // Regular expression found thanks to Stephen Ostermiller's Blog. http://blog.ostermiller.org/find-comment
-        // $regex = '%^' . $startDelimiter . '\*([^*]|[\r\n]|(\*+([^*' . $endDelimiter . ']|[\r\n])))*\*+' . $endDelimiter . '%';
-
-        // Initial regex was improved for special cases in Twig
-        return '%' . $startDelimiter . '\*([^*]|[\r\n]|(\*+((?!' . $endDelimiter . ')|[\r\n])))*\*+' . $endDelimiter . '%';
+        $this->reportOperationResult($content, $oldContent, $file->getRelativePathname());
     }
 
     private function addLicenseToNode(Stmt $node, SplFileInfo $file): void
@@ -363,7 +335,7 @@ class UpdateLicensesCommand extends Command
         foreach ($comments as $comment) {
             if ($comment instanceof \PhpParser\Comment
                 && strpos($comment->getText(), $this->discriminationString) !== false) {
-                $newContent = str_replace($comment->getText(), $this->text, $file->getContents());
+                $newContent = str_replace($comment->getText(), $this->licenseHeader->getContentByType('php'), $file->getContents());
 
                 if (!$this->runAsDry) {
                     file_put_contents(
@@ -372,7 +344,7 @@ class UpdateLicensesCommand extends Command
                     );
                 }
 
-                $this->reportOperationResult($newContent, $file->getContents(), $file->getFilename());
+                $this->reportOperationResult($newContent, $file->getContents(), $file->getRelativePathname());
 
                 return;
             }
@@ -385,7 +357,7 @@ class UpdateLicensesCommand extends Command
     private function prependInPHPFile(SplFileInfo $file): void
     {
         $needle = '<?php';
-        $replace = "<?php\n" . $this->text;
+        $replace = "<?php\n" . $this->licenseHeader->getContentByType('php');
         $haystack = $file->getContents();
 
         $pos = strpos($haystack, $needle);
@@ -404,32 +376,32 @@ class UpdateLicensesCommand extends Command
                 file_put_contents($this->targetDirectory . '/' . $file->getRelativePathname(), $newstring);
             }
 
-            $this->reportOperationResult($newstring, $haystack, $file->getFilename());
+            $this->reportOperationResult($newstring, $haystack, $file->getRelativePathname());
         }
-    }
-
-    private function addLicenseToSmartyTemplate(SplFileInfo $file): void
-    {
-        $this->addLicenseToFile($file, '{', '}', '{**', '*}');
     }
 
     private function addLicenseToTwigTemplate(SplFileInfo $file): void
     {
-        if (strrpos($file->getRelativePathName(), 'html.twig') !== false) {
+        $fileContent = $file->getContents();
+        $regexpCandidates = [
             // For a short moment v9 had some twig headers a bit wrongly written with extra spaces because of automatic
             // changes made by the new linter This special cas aims at fixing those
-            $invalidLintedTwigRegexp = $this->getLicenseRegex('{# ', ' #}');
-            if (preg_match($invalidLintedTwigRegexp, $file->getContents())) {
-                $this->addLicenseToFile($file, '{# ', ' #}', '{#', '#}', '#');
-            } else {
-                $this->addLicenseToFile($file, '{#', '#}', null, null, '#');
+            $this->licenseHeader->getTwigLicenseRegex('{# ', ' #}', '*'),
+            $this->licenseHeader->getTwigLicenseRegex('{# ', ' #}', '#'),
+            // These are properly formatted headers but using the * delimiter
+            $this->licenseHeader->getTwigLicenseRegex('{#', '#}', '*'),
+        ];
+
+        foreach ($regexpCandidates as $regexpCandidate) {
+            if (preg_match($regexpCandidate, $fileContent)) {
+                $this->addLicenseToFile($file, $regexpCandidate);
+                return;
             }
         }
-    }
 
-    private function addLicenseToHtmlFile(SplFileInfo $file): void
-    {
-        $this->addLicenseToFile($file, '<!--', '-->');
+        // These are the most recent and adopted headers with only # which are more twig style
+        $defaultTwigRegex = $this->licenseHeader->getRegexByType('twig');
+        $this->addLicenseToFile($file, $defaultTwigRegex);
     }
 
     /**
@@ -475,7 +447,7 @@ class UpdateLicensesCommand extends Command
             );
         }
 
-        $this->reportOperationResult($encodedContent, $file->getContents(), $file->getFilename());
+        $this->reportOperationResult($encodedContent, $file->getContents(), $file->getRelativePathname());
     }
 
     private function reportOperationResult(string $newFileContent, string $oldFileContent, string $filename): void
@@ -511,11 +483,13 @@ class UpdateLicensesCommand extends Command
 
         $report = $this->reporter->getReport();
 
-        if (empty($report['fixed'])) {
-            return;
+        if (!empty($report['fixed'])) {
+            $style->text('Files with bad license headers:');
+            $style->listing($report['fixed']);
         }
-
-        $style->text('Files with bad license headers:');
-        $style->listing($report['fixed']);
+        if (!empty($report['failed'])) {
+            $style->text('Failed fixing license headers:');
+            $style->listing($report['failed']);
+        }
     }
 }

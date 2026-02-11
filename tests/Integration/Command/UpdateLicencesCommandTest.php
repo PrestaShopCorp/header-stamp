@@ -66,7 +66,7 @@ class UpdateLicencesCommandTest extends TestCase
     /**
      * @dataProvider getFoldersToTest
      */
-    public function testCommandResult(string $folderToTest, bool $isFolderValid, array $invalidFiles = []): void
+    public function testCommandModifications(string $folderToTest, bool $isFolderValid, array $invalidFiles = []): void
     {
         // Prepare module workspace
         $moduleSource = __DIR__ . '/../../Resources/module-samples/' . $folderToTest;
@@ -102,6 +102,13 @@ class UpdateLicencesCommandTest extends TestCase
 
         // Check the corrections based on the expected status of the module (to make sure fixtures are not broken)
         $corrections = $folderComparator->compareFolders($moduleExpected, $moduleSource);
+        sort($corrections);
+
+        // Format expected messages based on file name list
+        $invalidFiles = array_map(static function (string $fileName): string {
+            return '/' . $fileName . ' has different md5';
+        }, $invalidFiles);
+        sort($invalidFiles);
         $this->assertEquals($invalidFiles, $corrections);
 
         // If all is good we can already clean the workspace folder
@@ -111,7 +118,7 @@ class UpdateLicencesCommandTest extends TestCase
     /**
      * @dataProvider getFoldersToTest
      */
-    public function testCommandDryRun(string $folderToTest, bool $isFolderValid): void
+    public function testCommandDryRun(string $folderToTest, bool $isFolderValid, array $invalidFiles = []): void
     {
         // Prepare module workspace
         $moduleSource = __DIR__ . '/../../Resources/module-samples/' . $folderToTest;
@@ -139,16 +146,60 @@ class UpdateLicencesCommandTest extends TestCase
         $commandResult = $commandTester->execute($commandParameters);
         $this->assertEquals($isFolderValid ? 0 : 1, $commandResult);
 
+        $commandOutput = $commandTester->getDisplay();
+        if (!empty($invalidFiles)) {
+            // First find the fixed files block
+            $matches = [];
+            $this->assertNotFalse(preg_match('/ Files with bad license headers:\n( \* [^\n]+\n)+/', $commandOutput, $matches));
+            // Then extract the list from it
+            $matches2 = [];
+            preg_match_all('/( \* [^\n]+\n)/', $matches[0], $matches2);
+            $this->assertEquals(count($matches2[0]), count($invalidFiles));
+            $outputFiles = [];
+            foreach ($matches2[0] as $file) {
+                $outputFiles[] = str_replace(["\n", ' * '], '', $file);
+            }
+            sort($outputFiles);
+            sort($invalidFiles);
+            $this->assertEquals($outputFiles, $invalidFiles);
+        } else {
+            $this->assertFalse(str_contains($commandOutput, 'Files with bad license headers:'));
+        }
+
         // If all is good we can already clean the workspace folder
         self::$fs->remove($moduleWorkspace);
     }
 
     public static function getFoldersToTest(): iterable
     {
+        // Contains most of the files to be fixed:
+        // - files without headers
+        // - files with headers but not the proper license
+        // - files that don't need to be modified
+        // - files with old format of headers (mostly twig)
+        // - an ignoredFolder that shouldn't be modified (passed as the argument)
+        // - and ignoredFile (fake.min.js) that shouldn't be modified (passed as the argument)
         yield 'fakemodule, reference with invalid files of many types to validate them all' => [
             'fakemodule',
             false,
-            []
+            [
+                'FakeClassWithoutHeader.php',
+                'FakeClassWithoutHeaderButComment.php',
+                'views/css/app.css',
+                'views/js/wrong_header.js',
+                'views/js/app.js',
+                'views/templates/app.tpl',
+                'views/templates/old_v8_license_header.html.twig',
+                'views/templates/no_license_header_but_comment.html.twig',
+                'views/templates/invalid_v90_linter_format.html.twig',
+                'views/templates/invalid_osl_header.html.twig',
+                'views/templates/no_comment.html.twig',
+                'views/templates/app.html.twig',
+                'views/templates/missing-header.vue',
+                'views/templates/wrong-osl-header.vue',
+                'FakeClassWithWrongHeader.php',
+                'composer.json',
+            ],
         ];
 
         yield 'valid module gsitemap' => [
@@ -165,7 +216,7 @@ class UpdateLicencesCommandTest extends TestCase
             'existing-headers-discrimination',
             false,
             [
-                '/existing-headers-discrimination.php has different md5',
+                'existing-headers-discrimination.php',
             ],
         ];
 
@@ -173,7 +224,7 @@ class UpdateLicencesCommandTest extends TestCase
             'smart-headers',
             false,
             [
-                '/emptynewlineheader.php has different md5',
+                'emptynewlineheader.php',
             ],
         ];
     }
