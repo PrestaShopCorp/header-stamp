@@ -35,6 +35,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
+use Symfony\Component\Yaml\Yaml;
 
 class UpdateLicensesCommand extends Command
 {
@@ -50,7 +51,21 @@ class UpdateLicensesCommand extends Command
         'json',
         'vue',
     ];
-    const DEFAULT_FOLDER_FILTERS = [];
+    const CONFIG_PARAMETERS_MAPPING = [
+        'extensions' => 'extensions',
+        'folderFilters' => 'exclude',
+        'fileFilters' => 'not-name',
+        'license' => 'license',
+        'targetDirectory' => 'target-directory',
+        'runAsDry' => 'dry-run',
+        'displayReport' => 'display-report',
+        'discriminationString' => 'header-discrimination-string',
+    ];
+
+    const DEFAULT_FOLDER_FILTERS = [
+        'vendor',
+        'node_modules',
+    ];
 
     const DEFAULT_FILE_FILTERS = [];
 
@@ -67,7 +82,7 @@ class UpdateLicensesCommand extends Command
     private $license;
 
     /**
-     * @var string|false Can be false because of realpath function
+     * @var string Can be false because of realpath function
      */
     private $targetDirectory;
 
@@ -176,31 +191,145 @@ class UpdateLicensesCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 'Fix existing licenses only if they contain that string',
                 'NOTICE OF LICENSE'
+            )
+            ->addOption(
+                'config',
+                'c',
+                InputOption::VALUE_OPTIONAL,
+                'Use YAML config file instead of individual options',
+                '.header-stamp-config.yml'
             );
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
-        $this->extensions = explode(',', $input->getOption('extensions'));
-        $this->folderFilters = $input->getOption('exclude')
-            ? explode(',', $input->getOption('exclude')) : [];
-        $this->fileFilters = $input->getOption('not-name')
-            ? explode(',', $input->getOption('not-name')) : [];
+        $defaultConfig = $this->getDefaultConfig($input);
+        $fileConfig = $this->getConfigFromFile($input);
+        $tokenConfig = $this->getTokenConfig($input);
 
-        $licenseOption = $input->getOption('license');
-        $this->license = is_string($licenseOption) ? $licenseOption : '';
+        $mergedConfig = array_merge(
+            $defaultConfig,
+            // Config file has more priority that the default values (especially the automatic fallbacks)
+            $fileConfig,
+            // But explicit individual parameter still has more value than the config file
+            $tokenConfig
+        );
 
-        $targetOption = $input->getOption('target');
-        if (is_string($targetOption) && !empty($targetOption)) {
-            $this->targetDirectory = realpath($targetOption);
-        } else {
-            $this->targetDirectory = getcwd();
+        // Now apply the config to the command fields
+        $this->extensions = $mergedConfig['extensions'];
+        $this->folderFilters = $mergedConfig['folderFilters'];
+        $this->fileFilters = $mergedConfig['fileFilters'];
+        $this->license = $mergedConfig['license'];
+        $this->targetDirectory = $mergedConfig['targetDirectory'];
+        $this->runAsDry = $mergedConfig['runAsDry'];
+        $this->displayReport = $mergedConfig['displayReport'];
+        $this->discriminationString = $mergedConfig['discriminationString'];
+
+        // Output configuration
+        $output->writeln('Header stamp configuration:');
+        foreach (array_keys(self::CONFIG_PARAMETERS_MAPPING) as $commandField) {
+            $configValue = $mergedConfig[$commandField];
+            $output->writeln(sprintf(' - %s: %s', $commandField, is_array($configValue) ? implode(', ', $configValue) : $configValue));
         }
-        $this->runAsDry = ($input->getOption('dry-run') === true);
-        $this->displayReport = ($input->getOption('display-report') === true);
+    }
 
-        $discriminationOption = $input->getOption('header-discrimination-string');
-        $this->discriminationString = is_string($discriminationOption) ? $discriminationOption : '';
+    /**
+     * Returns default configuration as per defined in the command options,
+     * using their default value or fallback if they are not specified.
+     *
+     * @return array{extensions: string[], folderFilters: string[], fileFilters: string[], license: string, targetDirectory: string, runAsDry: bool, displayReport: bool, discriminationString: string}
+     */
+    protected function getDefaultConfig(InputInterface $input): array
+    {
+        $defaultConfig = [
+            'extensions' => explode(',', $input->getOption('extensions')),
+            'folderFilters' => $input->getOption('exclude') ? explode(',', $input->getOption('exclude')) : [],
+            'fileFilters' => $input->getOption('not-name') ? explode(',', $input->getOption('not-name')) : [],
+            'license' => $input->getOption('license'),
+            'targetDirectory' => $input->getOption('target') ?: '',
+            'runAsDry' => $input->getOption('dry-run') === true,
+            'displayReport' => $input->getOption('display-report') === true,
+            'discriminationString' => $input->getOption('header-discrimination-string') ?: '',
+        ];
+        $this->adaptConfig($defaultConfig);
+
+        return $defaultConfig;
+    }
+
+    /**
+     * Return the config only based on explicitly specified parameters in the CLI command.
+     *
+     * @return array{extensions?: string[], folderFilters?: string[], fileFilters?: string[], license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string}
+     */
+    protected function getTokenConfig(InputInterface $input): array
+    {
+        $tokenConfig = [];
+        $defaultConfig = $this->getDefaultConfig($input);
+        foreach (self::CONFIG_PARAMETERS_MAPPING as $configParameter => $cliParameter) {
+            // Only keep parameters that are explicitly specified as CLI parameters
+            if ($input->hasParameterOption('--' . $cliParameter)) {
+                $tokenConfig[$configParameter] = $defaultConfig[$configParameter];
+            }
+        }
+        $this->adaptConfig($tokenConfig);
+
+        return $tokenConfig;
+    }
+
+    /**
+     * Return the config defined in the config file (when present), the yaml file
+     * can use the same keys as the CLI command parameters OR the config ones (they
+     * even have a higher priority).
+     *
+     * Ex: fileFilters will be preferred over not-name
+     *
+     * @return array{extensions?: string[], folderFilters?: string[], fileFilters?: string[], license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string}
+     */
+    protected function getConfigFromFile(InputInterface $input): array
+    {
+        $configFromFile = [];
+
+        $configFile = $input->getOption('config');
+        if (null !== $configFile && file_exists($configFile)) {
+            $parsedConfig = Yaml::parse(file_get_contents($configFile) ?: '');
+
+            // Transform parameters with the appropriate naming when they are present in the yaml file
+            foreach (self::CONFIG_PARAMETERS_MAPPING as $parameter => $value) {
+                $parameterName = self::CONFIG_PARAMETERS_MAPPING[$parameter];
+                if (isset($parsedConfig[$parameterName])) {
+                    $configFromFile[$parameter] = $parsedConfig[$parameterName];
+                }
+
+                // If the YAML contains a value using the config property name directly it is prioritized
+                if (isset($parsedConfig[$parameter])) {
+                    $configFromFile[$parameter] = $parsedConfig[$parameter];
+                }
+            }
+        }
+        $this->adaptConfig($configFromFile);
+
+        return $configFromFile;
+    }
+
+    /**
+     * Some config fields need to be adapted, this method transforms all three configs the same way
+     *
+     * @param array{extensions?: string[], folderFilters?: string[], fileFilters?: string[], license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string} $config
+     */
+    protected function adaptConfig(array &$config): void
+    {
+        if (!empty($config['license'])) {
+            $config['license'] = realpath($config['license']);
+        }
+
+        // Directory must be transformed in real path when present (unlikely in the config file)
+        if (isset($config['targetDirectory'])) {
+            if (!empty($config['targetDirectory'])) {
+                $config['targetDirectory'] = realpath($config['targetDirectory']);
+            } else {
+                $config['targetDirectory'] = getcwd();
+            }
+        }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -231,7 +360,7 @@ class UpdateLicensesCommand extends Command
 
     private function findAndCheckExtension(InputInterface $input, OutputInterface $output, string $ext): void
     {
-        if ($this->targetDirectory === false) {
+        if (!is_dir($this->targetDirectory)) {
             throw new \Exception('Could not get target directory. Check your permissions.');
         }
 
