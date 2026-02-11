@@ -45,6 +45,9 @@
         "phpunit/phpunit": "^8.5"
     },
     "scripts": {
+        "cs-fixer": [
+            "@php -d date.timezone=UTC ./vendor/bin/php-cs-fixer fix --dry-run --diff --using-cache=no --diff-format udiff"
+        ],
         "integration-tests": [
             "@php -d date.timezone=UTC ./vendor/phpunit/phpunit/phpunit -c tests/Integration/phpunit.xml"
         ],
