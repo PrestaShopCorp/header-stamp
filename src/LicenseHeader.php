@@ -124,7 +124,7 @@ class LicenseHeader
         return $this->regexByTypes[$type];
     }
 
-    public function getTwigLicenseRegex(string $startDelimiter, string $endDelimiter, string $commentDelimiter = "*"): string
+    public function getTwigLicenseRegex(string $startDelimiter, string $endDelimiter, string $commentDelimiter = '*'): string
     {
         $startDelimiter = addcslashes($startDelimiter, '*#{}');
         $endDelimiter = addcslashes($endDelimiter, '*#{}');
@@ -150,7 +150,7 @@ class LicenseHeader
         $text = $startDelimiter . ltrim($text, '/**');
         $text = rtrim($text, '*/') . $endDelimiter;
         if (null !== $commentDelimiter) {
-            $text = preg_replace('% \*%', $commentDelimiter, $text);
+            $text = (string) preg_replace('% \*%', $commentDelimiter, $text);
         }
 
         return trim($text, PHP_EOL);

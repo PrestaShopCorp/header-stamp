@@ -272,7 +272,7 @@ class LicenseHeaderTest extends TestCase
     {
         $licenses = [
             __DIR__ . '/../../assets/afl.txt',
-            __DIR__ . '/../../assets/osl3.txt'
+            __DIR__ . '/../../assets/osl3.txt',
         ];
 
         foreach ($licenses as $license) {

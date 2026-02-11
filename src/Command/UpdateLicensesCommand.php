@@ -395,6 +395,7 @@ class UpdateLicensesCommand extends Command
         foreach ($regexpCandidates as $regexpCandidate) {
             if (preg_match($regexpCandidate, $fileContent)) {
                 $this->addLicenseToFile($file, $regexpCandidate);
+
                 return;
             }
         }

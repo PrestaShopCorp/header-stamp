@@ -38,6 +38,7 @@ class UpdateLicencesCommandTest extends TestCase
 {
     private static $workspaceFolder;
     private static $fs;
+
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
