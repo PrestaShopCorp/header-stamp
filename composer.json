@@ -13,6 +13,7 @@
         "php": "^8.0 || ^7.2",
         "symfony/console": "^3.4 || ~4.0 || ~5.0 || ~6.0",
         "symfony/finder": "^3.4 || ~4.0 || ~5.0 || ~6.0",
+        "symfony/yaml": "^3.4 || ~4.0 || ~5.0 || ~6.0",
         "nikic/php-parser": "^4.10"
     },
     "config": {
@@ -31,9 +32,27 @@
             "PrestaShop\\HeaderStamp\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\Integration\\": "tests/Integration",
+            "Tests\\Unit\\": "tests/Unit"
+        }
+    },
     "author": "PrestaShop",
     "require-dev": {
         "prestashop/php-dev-tools": "1.*",
-        "phpstan/phpstan": "^1.12"
+        "phpstan/phpstan": "^1.12",
+        "phpunit/phpunit": "^8.5"
+    },
+    "scripts": {
+        "cs-fixer": [
+            "@php -d date.timezone=UTC ./vendor/bin/php-cs-fixer fix --dry-run --diff --using-cache=no --diff-format udiff"
+        ],
+        "integration-tests": [
+            "@php -d date.timezone=UTC ./vendor/phpunit/phpunit/phpunit -c tests/Integration/phpunit.xml"
+        ],
+        "unit-tests": [
+            "@php -d date.timezone=UTC ./vendor/phpunit/phpunit/phpunit -c tests/Unit/phpunit.xml"
+        ]
     }
 }

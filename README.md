@@ -31,12 +31,15 @@ php vendor/bin/header-stamp --exclude=vendor,node_modules
 Available options:
 
 ```
---license=LICENSE        License file to apply [default: "assets/osl3.txt"]
---exclude=EXCLUDE        Comma-separated list of folders and files to exclude from the update [default: ""]
---extensions=EXTENSIONS  Comma-separated list of file extensions to update [default: "php,js,ts,css,scss,tpl,html.twig,json,vue"]
---target=PATH            Folder to work in [default: Current directory]
---dry-run                Dry-run mode does not modify files
---display-report         Whether or not to display a report
+--license=LICENSE                                           License file to apply [default: "assets/osl3.txt"]
+--target=PATH                                               Folder to work in [default: Current directory]
+--exclude=EXCLUDE                                           Comma-separated list of folders and files to exclude from the update [default: ""]
+--not-name=NOT_NAME                                         Comma-separated list of regex to exclude files from the update (ex: *.min.js) [default: ""]
+--extensions=EXTENSIONS                                     Comma-separated list of file extensions to update [default: "php,js,ts,css,scss,tpl,html.twig,json,vue"]
+--display-report                                            Whether or not to display a report
+--dry-run                                                   Dry-run mode does not modify files
+--header-discrimination-string=HEADER-DISCIMINATION-STRING  String used to identify a comment that contains a license header [default: "NOTICE OF LICENSE"]
+--config=CONFIG                                             Path to config file that allows specifying all the above parameters [default: .header-stamp-config.yml]
 ```
 
 ## Development

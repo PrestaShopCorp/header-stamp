@@ -1,0 +1,13 @@
+<phpunit
+    bootstrap="bootstrap.php"
+    processIsolation="false">
+  <php>
+    <env name="KERNEL_CLASS" value="Tests\Integration\TestKernel" />
+    <env name="SYMFONY_DEPRECATIONS_HELPER" value="weak"/>
+  </php>
+  <testsuites>
+    <testsuite name="Integration">
+      <directory>.</directory>
+    </testsuite>
+  </testsuites>
+</phpunit>
