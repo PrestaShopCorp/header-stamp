@@ -39,35 +39,42 @@ use Symfony\Component\Yaml\Yaml;
 
 class UpdateLicensesCommand extends Command
 {
-    const DEFAULT_LICENSE_FILE = __DIR__ . '/../../assets/osl3.txt';
-    const DEFAULT_EXTENSIONS = [
-        'php',
-        'js',
-        'ts',
-        'css',
-        'scss',
-        'tpl',
-        'html.twig',
-        'json',
-        'vue',
-    ];
     const CONFIG_PARAMETERS_MAPPING = [
         'extensions' => 'extensions',
         'excludedFiles' => 'exclude',
         'notNamePatterns' => 'not-name',
         'license' => 'license',
-        'targetDirectory' => 'target-directory',
+        'targetDirectory' => 'target',
         'runAsDry' => 'dry-run',
         'displayReport' => 'display-report',
         'discriminationString' => 'header-discrimination-string',
     ];
 
-    const DEFAULT_FOLDER_FILTERS = [
-        'vendor',
-        'node_modules',
+    const DEFAULT_CONFIG = [
+        'extensions' => [
+            'php',
+            'js',
+            'ts',
+            'css',
+            'scss',
+            'tpl',
+            'html.twig',
+            'json',
+            'vue',
+        ],
+        'excludedFiles' => [
+            'vendor',
+            'node_modules',
+        ],
+        'notNamePatterns' => [],
+        'license' => __DIR__ . '/../../assets/osl3.txt',
+        'targetDirectory' => '',
+        'runAsDry' => false,
+        'displayReport' => false,
+        'discriminationString' => 'NOTICE OF LICENSE',
     ];
 
-    const DEFAULT_FILE_FILTERS = [];
+    const DEFAULT_CONFIG_FILE = '.header-stamp-config.yml';
 
     /**
      * @var LicenseHeader
@@ -136,6 +143,10 @@ class UpdateLicensesCommand extends Command
 
     protected function configure(): void
     {
+        // Note: we don't use short parameter because they are badly handled by hasParameterOption
+        // We also define NO default values because they are already handled via the default config const,
+        // and it's important to keep this separated for the override system to work properly (default < config
+        // file < cli parameter)
         $this
             ->setName('prestashop:licenses:update')
             ->setDescription('Rewrite your file headers to add the license or to make them up-to-date')
@@ -143,8 +154,7 @@ class UpdateLicensesCommand extends Command
                 'license',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'License file to apply',
-                realpath(static::DEFAULT_LICENSE_FILE)
+                'License file to apply'
             )
             ->addOption(
                 'target',
@@ -156,22 +166,19 @@ class UpdateLicensesCommand extends Command
                 'exclude',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Comma-separated list of folders/files to exclude from the update',
-                implode(',', static::DEFAULT_FOLDER_FILTERS)
+                'Comma-separated list of folders/files to exclude from the update'
             )
             ->addOption(
                 'not-name',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Comma-separated list of file patterns to exclude from the update (ex: *.min.js)',
-                implode(',', static::DEFAULT_FILE_FILTERS)
+                'Comma-separated list of file patterns to exclude from the update (ex: *.min.js)'
             )
             ->addOption(
                 'extensions',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Comma-separated list of file extensions to update',
-                implode(',', static::DEFAULT_EXTENSIONS)
+                'Comma-separated list of file extensions to update'
             )
             ->addOption(
                 'display-report',
@@ -189,31 +196,51 @@ class UpdateLicensesCommand extends Command
                 'header-discrimination-string',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'Fix existing licenses only if they contain that string',
-                'NOTICE OF LICENSE'
+                'Fix existing licenses only if they contain that string'
             )
             ->addOption(
                 'config',
-                'c',
+                null,
                 InputOption::VALUE_OPTIONAL,
-                'Use YAML config file instead of individual options',
-                '.header-stamp-config.yml'
+                'Use YAML config file instead of individual options'
             );
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
-        $defaultConfig = $this->getDefaultConfig($input);
         $fileConfig = $this->getConfigFromFile($input);
         $tokenConfig = $this->getTokenConfig($input);
 
         $mergedConfig = array_merge(
-            $defaultConfig,
+            static::DEFAULT_CONFIG,
             // Config file has more priority that the default values (especially the automatic fallbacks)
             $fileConfig,
             // But explicit individual parameter still has more value than the config file
             $tokenConfig
         );
+
+        // Adapt config to have absolute real path
+        if (!empty($mergedConfig['license'])) {
+            $mergedConfig['license'] = realpath($mergedConfig['license']);
+        }
+        if (!empty($mergedConfig['targetDirectory'])) {
+            $mergedConfig['targetDirectory'] = (string) realpath($mergedConfig['targetDirectory']);
+        } else {
+            $mergedConfig['targetDirectory'] = (string) getcwd();
+        }
+        // Adapt string CLI parameter into arrays
+        if (is_string($mergedConfig['extensions'])) {
+            $mergedConfig['extensions'] = explode(',', $mergedConfig['extensions']);
+        }
+        if (is_string($mergedConfig['excludedFiles'])) {
+            $mergedConfig['excludedFiles'] = explode(',', $mergedConfig['excludedFiles']);
+        }
+        if (is_string($mergedConfig['notNamePatterns'])) {
+            $mergedConfig['notNamePatterns'] = explode(',', $mergedConfig['notNamePatterns']);
+        }
+        // Adapt boolean parameters
+        $mergedConfig['runAsDry'] = filter_var($mergedConfig['runAsDry'], FILTER_VALIDATE_BOOLEAN);
+        $mergedConfig['displayReport'] = filter_var($mergedConfig['displayReport'], FILTER_VALIDATE_BOOLEAN);
 
         // Now apply the config to the command fields
         $this->extensions = $mergedConfig['extensions'];
@@ -229,31 +256,13 @@ class UpdateLicensesCommand extends Command
         $output->writeln('Header stamp configuration:');
         foreach (array_keys(self::CONFIG_PARAMETERS_MAPPING) as $commandField) {
             $configValue = $mergedConfig[$commandField];
-            $output->writeln(sprintf(' - %s: %s', $commandField, is_array($configValue) ? implode(', ', $configValue) : $configValue));
+            if (is_array($configValue)) {
+                $configValue = implode(', ', $configValue);
+            } elseif (is_bool($configValue)) {
+                $configValue = $configValue ? 'true' : 'false';
+            }
+            $output->writeln(sprintf(' - %s: %s', $commandField, $configValue));
         }
-    }
-
-    /**
-     * Returns default configuration as per defined in the command options,
-     * using their default value or fallback if they are not specified.
-     *
-     * @return array{extensions: string[], excludedFiles: string[], notNamePatterns: string[], license: string, targetDirectory: string, runAsDry: bool, displayReport: bool, discriminationString: string}
-     */
-    protected function getDefaultConfig(InputInterface $input): array
-    {
-        $defaultConfig = [
-            'extensions' => explode(',', $input->getOption('extensions')),
-            'excludedFiles' => $input->getOption('exclude') ? explode(',', $input->getOption('exclude')) : [],
-            'notNamePatterns' => $input->getOption('not-name') ? explode(',', $input->getOption('not-name')) : [],
-            'license' => $input->getOption('license'),
-            'targetDirectory' => $input->getOption('target') ?: '',
-            'runAsDry' => $input->getOption('dry-run') === true,
-            'displayReport' => $input->getOption('display-report') === true,
-            'discriminationString' => $input->getOption('header-discrimination-string') ?: '',
-        ];
-        $this->adaptConfig($defaultConfig);
-
-        return $defaultConfig;
     }
 
     /**
@@ -264,14 +273,12 @@ class UpdateLicensesCommand extends Command
     protected function getTokenConfig(InputInterface $input): array
     {
         $tokenConfig = [];
-        $defaultConfig = $this->getDefaultConfig($input);
         foreach (self::CONFIG_PARAMETERS_MAPPING as $configParameter => $cliParameter) {
             // Only keep parameters that are explicitly specified as CLI parameters
             if ($input->hasParameterOption('--' . $cliParameter)) {
-                $tokenConfig[$configParameter] = $defaultConfig[$configParameter];
+                $tokenConfig[$configParameter] = $input->getOption($cliParameter);
             }
         }
-        $this->adaptConfig($tokenConfig);
 
         return $tokenConfig;
     }
@@ -289,8 +296,19 @@ class UpdateLicensesCommand extends Command
     {
         $configFromFile = [];
 
-        $configFile = $input->getOption('config');
-        if (null !== $configFile && file_exists($configFile)) {
+        $configFile = null;
+        // When config is explicitly passed the file MUST exist
+        if ($input->hasParameterOption('--config')) {
+            $configFile = $input->getOption('config');
+            if (!file_exists($configFile)) {
+                throw new \RuntimeException(sprintf('The config file "%s" was not found', $configFile));
+            }
+        } elseif (file_exists(static::DEFAULT_CONFIG_FILE)) {
+            // For the default config file, it can be used by convention but if it's not present we gracefully ignore it
+            $configFile = static::DEFAULT_CONFIG_FILE;
+        }
+
+        if (null !== $configFile) {
             $parsedConfig = Yaml::parse(file_get_contents($configFile) ?: '');
 
             // Transform parameters with the appropriate naming when they are present in the yaml file
@@ -306,30 +324,8 @@ class UpdateLicensesCommand extends Command
                 }
             }
         }
-        $this->adaptConfig($configFromFile);
 
         return $configFromFile;
-    }
-
-    /**
-     * Some config fields need to be adapted, this method transforms all three configs the same way
-     *
-     * @param array{extensions?: string[], excludedFiles?: string[], notNamePatterns?: string[], license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string} $config
-     */
-    protected function adaptConfig(array &$config): void
-    {
-        if (!empty($config['license'])) {
-            $config['license'] = realpath($config['license']);
-        }
-
-        // Directory must be transformed in real path when present (unlikely in the config file)
-        if (isset($config['targetDirectory'])) {
-            if (!empty($config['targetDirectory'])) {
-                $config['targetDirectory'] = realpath($config['targetDirectory']);
-            } else {
-                $config['targetDirectory'] = getcwd();
-            }
-        }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
