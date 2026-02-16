@@ -71,7 +71,10 @@ class UpdateLicensesCommand extends Command
         'targetDirectory' => '',
         'runAsDry' => false,
         'displayReport' => false,
-        'discriminationString' => 'NOTICE OF LICENSE',
+        'discriminationString' => [
+            'PrestaShop SA and Contributors',
+            'NOTICE OF LICENSE',
+        ],
     ];
 
     const DEFAULT_CONFIG_FILE = '.header-stamp-config.yml';
@@ -137,7 +140,7 @@ class UpdateLicensesCommand extends Command
     private $reporter;
 
     /**
-     * @var string
+     * @var string[]
      */
     private $discriminationString;
 
@@ -196,7 +199,7 @@ class UpdateLicensesCommand extends Command
                 'header-discrimination-string',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'Fix existing licenses only if they contain that string'
+                'Fix existing licenses only if they contain that string (multiple values separated by comma are possible)'
             )
             ->addOption(
                 'config',
@@ -238,6 +241,9 @@ class UpdateLicensesCommand extends Command
         if (is_string($mergedConfig['notNamePatterns'])) {
             $mergedConfig['notNamePatterns'] = explode(',', $mergedConfig['notNamePatterns']);
         }
+        if (is_string($mergedConfig['discriminationString'])) {
+            $mergedConfig['discriminationString'] = explode(',', $mergedConfig['discriminationString']);
+        }
         // Adapt boolean parameters
         $mergedConfig['runAsDry'] = filter_var($mergedConfig['runAsDry'], FILTER_VALIDATE_BOOLEAN);
         $mergedConfig['displayReport'] = filter_var($mergedConfig['displayReport'], FILTER_VALIDATE_BOOLEAN);
@@ -268,7 +274,7 @@ class UpdateLicensesCommand extends Command
     /**
      * Return the config only based on explicitly specified parameters in the CLI command.
      *
-     * @return array{extensions?: string[], excludedFiles?: string[], notNamePatterns?: string[], license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string}
+     * @return array{extensions?: string[], excludedFiles?: string[], notNamePatterns?: string[], license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string[]}
      */
     protected function getTokenConfig(InputInterface $input): array
     {
@@ -290,7 +296,7 @@ class UpdateLicensesCommand extends Command
      *
      * Ex: notNamePatterns will be preferred over not-name
      *
-     * @return array{extensions?: string[], excludedFiles?: string[], notNamePatterns?: string[], license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string}
+     * @return array{extensions?: string, excludedFiles?: string, notNamePatterns?: string, license?: string, targetDirectory?: string, runAsDry?: bool, displayReport?: bool, discriminationString?: string}
      */
     protected function getConfigFromFile(InputInterface $input): array
     {
@@ -431,7 +437,7 @@ class UpdateLicensesCommand extends Command
         if (count($matches)) {
             // Found - Replace it if prestashop one
             foreach ($matches as $match) {
-                if (stripos($match, $this->discriminationString) !== false) {
+                if ($this->isLicenseComment($match)) {
                     $foundLicenseComment = true;
                     $content = str_replace($match, $text, $content);
                 }
@@ -459,8 +465,7 @@ class UpdateLicensesCommand extends Command
 
         $comments = $node->getAttribute('comments');
         foreach ($comments as $comment) {
-            if ($comment instanceof \PhpParser\Comment
-                && strpos($comment->getText(), $this->discriminationString) !== false) {
+            if ($comment instanceof \PhpParser\Comment && $this->isLicenseComment($comment->getText())) {
                 $newContent = str_replace($comment->getText(), $this->licenseHeader->getContentByType('php'), $file->getContents());
 
                 if (!$this->runAsDry) {
@@ -478,6 +483,17 @@ class UpdateLicensesCommand extends Command
 
         // No comment was replaced so we prepend the license
         $this->prependInPHPFile($file);
+    }
+
+    private function isLicenseComment(string $commentContent): bool
+    {
+        foreach ($this->discriminationString as $discriminationString) {
+            if (strpos($commentContent, $discriminationString) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function prependInPHPFile(SplFileInfo $file): void

@@ -40,7 +40,7 @@ foreach ($autoloadFiles as $autoloadFile) {
 use PrestaShop\HeaderStamp\Command\UpdateLicensesCommand;
 use Symfony\Component\Console\Application;
 
-$application = new Application('header-stamp', '3.0.0');
+$application = new Application('header-stamp', '3.1.0');
 $command = new UpdateLicensesCommand();
 
 $application->add($command);
