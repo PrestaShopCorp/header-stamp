@@ -61,7 +61,7 @@ class UpdateLicencesCommandTest extends TestCase
     /**
      * @dataProvider getFoldersToTest
      */
-    public function testCommandModifications(string $folderToTest, bool $isFolderValid, array $invalidFiles = []): void
+    public function testCommandModifications(string $folderToTest, bool $isFolderValid, array $invalidFiles = [], string $discriminationParam = ''): void
     {
         // Prepare module workspace
         $moduleSource = __DIR__ . '/../../Resources/module-samples/' . $folderToTest;
@@ -83,9 +83,10 @@ class UpdateLicencesCommandTest extends TestCase
             '--not-name' => '*.min.js',
             '--exclude' => 'ignoredFolder',
         ];
-        if ('existing-headers-discrimination' === $folderToTest) {
-            $commandParameters['--header-discrimination-string'] = 'friendsofpresta';
+        if (!empty($discriminationParam)) {
+            $commandParameters['--header-discrimination-string'] = $discriminationParam;
         }
+
         $commandTester->execute($commandParameters);
 
         // Compare folders
@@ -135,9 +136,10 @@ class UpdateLicencesCommandTest extends TestCase
             '--exclude' => 'ignoredFolder',
             '--dry-run' => true,
         ];
-        if ('existing-headers-discrimination' === $folderToTest) {
-            $commandParameters['--header-discrimination-string'] = 'friendsofpresta';
+        if (!empty($discriminationParam)) {
+            $commandParameters['--header-discrimination-string'] = $discriminationParam;
         }
+
         $commandResult = $commandTester->execute($commandParameters);
         $this->assertEquals($isFolderValid ? 0 : 1, $commandResult);
 
@@ -195,16 +197,24 @@ class UpdateLicencesCommandTest extends TestCase
                 'FakeClassWithWrongHeader.php',
                 'composer.json',
             ],
+            // Use two discriminators (to check the implode works as expected)
+            'PrestaShop SA and Contributors,NOTICE OF LICENSE',
         ];
 
         yield 'valid module gsitemap' => [
             'gsitemap',
             true,
+            [],
+            // Use only one discriminator
+            'NOTICE OF LICENSE',
         ];
 
         yield 'valid module dashproducts' => [
             'dashproducts',
             true,
+            [],
+            // Use only one discriminator, but the other one (both are supposed to work with our test resources anyway)
+            'PrestaShop SA and Contributors',
         ];
 
         yield 'existing-headers-discrimination' => [
@@ -213,6 +223,7 @@ class UpdateLicencesCommandTest extends TestCase
             [
                 'existing-headers-discrimination.php',
             ],
+            'friendsofpresta',
         ];
 
         yield 'smart-headers' => [
